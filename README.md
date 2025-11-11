@@ -6,169 +6,196 @@ FluxSpace is a SaaS platform for processing drone magnetometer data to generate 
 
 ## Features
 
-- **Drone Data Processing** – Upload magnetometer CSV logs containing time, position, altitude, attitude, and magnetic field data.
-- **Interactive Map Viewer** – View processed magnetic maps through MapLibre GL with adjustable heatmap overlays and color scales.
-- **Dual-Sensor Support** – Automatically computes magnetic field gradients for higher anomaly sensitivity.
-- **High Resolution Output** – Produces 10–25 cm resolution grids with automatic UTM projection.
-- **Export Options** – Download results as GeoTIFFs, PNG previews, and CSV grids.
-- **Stripe Integration** – Subscription-based billing with usage tracking.
-- **Secure Authentication** – Managed through Supabase with row-level security.
-- **Dark Mode Interface** – Consistent interface for both light and dark environments.
+### Core Functionality
+- **Drone Data Processing** – Upload magnetometer CSV logs containing time, position, altitude, attitude, and magnetic field data
+- **Interactive Map Viewer** – View processed magnetic maps through MapLibre GL with adjustable heatmap overlays and color scales
+- **Dual-Sensor Support** – Automatically computes magnetic field gradients for higher anomaly sensitivity
+- **High Resolution Output** – Produces 10–25 cm resolution grids with automatic UTM projection
+- **Export Options** – Download results as GeoTIFFs, PNG previews, and CSV grids
+
+### User Experience
+- **Enhanced Navigation** – Dropdown menu system with mobile-responsive hamburger menu
+- **AI-Powered Chatbot** – Interactive support assistant with keyword-based responses
+- **Contact System** – Professional contact form with validation
+- **Why FluxSpace Page** – Comprehensive comparison with traditional methods
+- **Dark Mode Interface** – Full dark/light theme support
+
+### Business Features
+- **Stripe Integration** – Subscription-based billing with usage tracking
+- **Three Pricing Tiers** – Starter (Free), Pro ($29/mo), Team ($99/mo)
+- **Secure Authentication** – Managed through Supabase with row-level security
+- **Usage Monitoring** – Track jobs per month and storage consumption
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router) with TypeScript
-- **Styling:** TailwindCSS with shadcn/ui components
+- **Framework:** Next.js 14 (App Router) + TypeScript
+- **Styling:** TailwindCSS + shadcn/ui components
 - **Auth & Database:** Supabase (Postgres + Storage)
-- **Payments:** Stripe (Checkout and Customer Portal)
+- **Payments:** Stripe (Checkout + Customer Portal)
 - **Maps:** MapLibre GL + deck.gl
 - **Charts:** Recharts
 - **Deployment:** Vercel
 
-## Getting Started
-
-### Requirements
-
-- Node.js 18 or higher
-- Supabase project and API keys
-- Stripe account (test mode for development)
-
-### Setup
-
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd fluxspace
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a local environment file:
-   ```bash
-   cp .env.example .env.local
-   ```
-
-4. Update `.env.local` with your own credentials:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-   STRIPE_SECRET_KEY=sk_test_...
-   STRIPE_WEBHOOK_SECRET=whsec_...
-   STRIPE_STARTER_PRICE_ID=price_...
-   STRIPE_PRO_PRICE_ID=price_...
-   STRIPE_TEAM_PRICE_ID=price_...
-
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   ```
-
-### Database Setup
-
-Run the SQL commands in the Supabase SQL editor to create tables, policies, and storage buckets.  
-(See the provided schema for details.)
-
-### Stripe Setup
-
-1. Create products and prices for each plan (Starter, Pro, Team).
-2. Copy the price IDs into your `.env.local`.
-3. Add a webhook endpoint pointing to `/api/stripe/webhook`.
-4. Add the webhook signing secret to `STRIPE_WEBHOOK_SECRET`.
-
-### Development
+## Quick Start
 
 ```bash
+# Clone and install
+git clone https://github.com/aidenerard/fluxspace.git
+cd fluxspace
+npm install
+
+# Configure environment
+cp .env.example .env.local
+# Edit .env.local with your keys
+
+# Set up database (run SQL from SETUP.md in Supabase)
+# Create storage buckets in Supabase
+
+# Seed demo data
+npm run seed
+
+# Start development server
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000).
 
-### Seeding Demo Data
+Open [http://localhost:3000](http://localhost:3000)
 
-```bash
-npm run seed
-```
-Creates a demo user (`demo@fluxspace.com`, password `demo123`) with a sample project and result set.
+**Demo Login:**
+- Email: demo@fluxspace.com
+- Password: demo123
+
+## Documentation
+
+- **README.md** (this file) – Project overview
+- **SETUP.md** – Detailed setup with SQL schema
+- **TODO_CHECKLIST.md** – Implementation roadmap
+- **PROJECT_SUMMARY.md** – Architecture overview
+- **🚀_START_HERE.md** – Quick start guide
 
 ## Project Structure
 
 ```
 fluxspace/
-├── app/              # Next.js routes
-│   ├── dashboard/    # User dashboard
-│   ├── viewer/       # Map viewer
-│   ├── api/          # API endpoints
-│   └── ...
-├── components/       # UI and shared components
-├── lib/              # Utilities (Supabase, Stripe, helpers)
-├── scripts/          # Tools and seed script
-└── public/           # Static assets
+├── app/                    # Next.js pages
+│   ├── page.tsx           # Landing page
+│   ├── dashboard/         # User dashboard
+│   ├── product/           # Product features
+│   ├── pricing/           # Pricing tiers
+│   ├── docs/              # Documentation
+│   ├── why-fluxspace/     # Benefits page
+│   ├── contact/           # Contact form
+│   ├── support/           # AI chatbot
+│   ├── signin/signup/     # Auth pages
+│   └── api/               # API routes
+├── components/            # React components
+│   ├── navbar.tsx        # Enhanced navigation
+│   └── ui/               # shadcn/ui components
+├── lib/                  # Utilities
+│   ├── supabase.ts      # Database client
+│   ├── stripe.ts        # Payment config
+│   └── utils.ts         # Helpers
+└── scripts/seed.ts      # Demo data
 ```
 
-## System Overview
+## Key Features Implemented
 
-### File Uploads
+✅ **Complete UI/UX**
+- Landing page with hero and features
+- Product, Pricing, Docs pages
+- Enhanced navigation with dropdown menu
+- Mobile hamburger menu
+- Dark mode support
 
-- Files are uploaded to Supabase Storage using presigned URLs.
-- Upload metadata is stored in the `uploads` table.
+✅ **Authentication**
+- Sign up / Sign in pages
+- Supabase auth integration
+- Protected dashboard routes
 
-### Processing Pipeline
+✅ **Database**
+- Full schema with RLS policies
+- Users, projects, uploads, jobs, usage tables
+- Storage buckets for files
 
-1. Parse and validate magnetometer CSV input.
-2. Convert sensor-frame magnetic data to Earth frame.
-3. Calculate magnetic field magnitudes and gradients.
-4. Apply filters and baseline corrections.
-5. Interpolate and grid data at high spatial resolution.
-6. Generate output files (GeoTIFF, PNG, CSV).
+✅ **New Pages**
+- Why FluxSpace (comparison & use cases)
+- Contact (form with validation)
+- Support (AI chatbot + FAQs)
 
-### Map Viewer
+✅ **Payment Structure**
+- Three pricing tiers defined
+- Stripe configuration ready
+- Usage tracking schema
 
-- Interactive visualization using MapLibre GL.
-- Adjustable color ramps and opacity.
-- Legend displays magnetic intensity or gradient.
-- Download links for all output formats.
+## What Needs Implementation
 
-### Billing & Usage
+🔨 **Priority 1 (Core Features)**
+- [ ] File upload with drag-and-drop
+- [ ] Processing pipeline (CSV → GeoTIFF)
+- [ ] Map viewer with heatmap overlay
+- [ ] Stripe webhook handlers
 
-- Stripe Checkout for plan subscriptions.
-- Usage tracking by job count and storage consumption.
-- Customer portal for managing subscriptions.
+🔨 **Priority 2 (Polish)**
+- [ ] Project detail pages
+- [ ] Account management page
+- [ ] Plan limit enforcement
+- [ ] Email notifications
+
+See `TODO_CHECKLIST.md` for complete roadmap.
+
+## CSV Data Format
+
+```csv
+time,lat,lon,alt,roll,pitch,yaw,Bx,By,Bz
+1678901234.5,37.7749,-122.4194,100.0,0.1,-0.2,45.3,25000,1500,-40000
+```
+
+**Required columns:**
+- time (Unix timestamp)
+- lat, lon (WGS84 degrees)
+- alt (meters)
+- roll, pitch, yaw (degrees)
+- Bx, By, Bz (nanoTeslas, body frame)
+
+**Optional:** Bx2, By2, Bz2 for gradiometer
 
 ## Deployment
 
-### Steps
+### Vercel
 
-1. Push code to GitHub and deploy through Vercel.
-2. Add all required environment variables to Vercel.
-3. Update Stripe webhooks and Supabase redirect URLs.
+```bash
+# Push to GitHub
+git push origin main
 
-### After Deployment
+# Deploy on Vercel
+# 1. Import from GitHub
+# 2. Add environment variables
+# 3. Deploy
+```
 
-- Verify webhook functionality.
-- Confirm auth redirects and environment configuration.
+### Post-Deployment
+- Update Stripe webhook URL
+- Configure Supabase redirect URLs
+- Set production app URL
 
 ## Security
 
-- Supabase row-level security (RLS).
-- Signed URLs for storage access.
-- Input validation and sanitized queries.
-- HTTP-only cookies for authentication.
+- Row-Level Security (RLS) on all tables
+- Signed URLs for file access
+- HTTP-only cookies for auth
+- Input validation with Zod
+- Environment secrets never committed
 
-## Testing
+## Support & Contact
 
-```bash
-npm test
-npm run type-check
-npm run lint
-```
+- **AI Chatbot:** Visit `/support`
+- **Contact Form:** Visit `/contact`
+- **Documentation:** Visit `/docs`
+- **GitHub:** [aidenerard/fluxspace](https://github.com/aidenerard/fluxspace)
 
 ## License
 
-Proprietary – all rights reserved.
+Proprietary – All rights reserved
 
-## Contact
+---
 
-For support or collaboration inquiries, use the contact form at `/support` or email the team directly.
+**Built for structural engineers and inspection professionals** 🚀
