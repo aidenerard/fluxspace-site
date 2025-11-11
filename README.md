@@ -99,46 +99,46 @@ fluxspace/
 
 ## Key Features Implemented
 
-✅ **Complete UI/UX**
+**Complete UI/UX**
 - Landing page with hero and features
 - Product, Pricing, Docs pages
 - Enhanced navigation with dropdown menu
 - Mobile hamburger menu
 - Dark mode support
 
-✅ **Authentication**
+**Authentication**
 - Sign up / Sign in pages
 - Supabase auth integration
 - Protected dashboard routes
 
-✅ **Database**
+**Database**
 - Full schema with RLS policies
 - Users, projects, uploads, jobs, usage tables
 - Storage buckets for files
 
-✅ **New Pages**
+**New Pages**
 - Why FluxSpace (comparison & use cases)
 - Contact (form with validation)
 - Support (AI chatbot + FAQs)
 
-✅ **Payment Structure**
+**Payment Structure**
 - Three pricing tiers defined
 - Stripe configuration ready
 - Usage tracking schema
 
 ## What Needs Implementation
 
-🔨 **Priority 1 (Core Features)**
-- [ ] File upload with drag-and-drop
-- [ ] Processing pipeline (CSV → GeoTIFF)
-- [ ] Map viewer with heatmap overlay
-- [ ] Stripe webhook handlers
+**Priority 1 (Core Features)**
+- File upload with drag-and-drop
+- Processing pipeline (CSV → GeoTIFF)
+- Map viewer with heatmap overlay
+- Stripe webhook handlers
 
-🔨 **Priority 2 (Polish)**
-- [ ] Project detail pages
-- [ ] Account management page
-- [ ] Plan limit enforcement
-- [ ] Email notifications
+**Priority 2 (Polish)**
+- Project detail pages
+- Account management page
+- Plan limit enforcement
+- Email notifications
 
 See `TODO_CHECKLIST.md` for complete roadmap.
 
