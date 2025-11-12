@@ -18,7 +18,7 @@ export default function Home() {
               Map hidden structural issues from the air
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl">
-              Upload your drone's magnetometer logs and get a georeferenced anomaly map ready to review in minutes.
+              Upload your drone$apos;s magnetometer logs and get a georeferenced anomaly map ready to review in minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/signup">

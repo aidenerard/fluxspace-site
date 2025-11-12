@@ -119,13 +119,13 @@ export default function PricingPage() {
               <div>
                 <h3 className="font-semibold mb-2">What happens when I exceed my plan limits?</h3>
                 <p className="text-sm text-muted-foreground">
-                  You'll receive a friendly notice when approaching limits. Processing will pause at hard limits until you upgrade or the next billing cycle.
+                  You$apos;ll receive a friendly notice when approaching limits. Processing will pause at hard limits until you upgrade or the next billing cycle.
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Can I upgrade or downgrade anytime?</h3>
                 <p className="text-sm text-muted-foreground">
-                  Yes. Changes take effect immediately and we'll prorate the difference on your next invoice.
+                  Yes. Changes take effect immediately and we$apos;ll prorate the difference on your next invoice.
                 </p>
               </div>
               <div>

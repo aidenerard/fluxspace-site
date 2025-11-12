@@ -41,7 +41,7 @@ export default function ContactPage() {
               Get in Touch
             </h1>
             <p className="text-xl text-muted-foreground">
-              Have questions? We're here to help.
+              Have questions? We$apos;re here to help.
             </p>
           </div>
 
@@ -87,7 +87,7 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle>Send us a message</CardTitle>
               <CardDescription>
-                Fill out the form below and we'll respond within 24 hours.
+                Fill out the form below and we$apos;ll respond within 24 hours.
               </CardDescription>
             </CardHeader>
             <CardContent>
