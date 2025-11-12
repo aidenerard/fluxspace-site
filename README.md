@@ -1,365 +1,201 @@
 # FluxSpace
 
-**Autonomous magnetic mapping for hidden structural issues.**
+**Autonomous magnetic mapping for hidden structural issues**
 
-FluxSpace is a production-ready SaaS platform that processes drone magnetometer data to produce 2D/3D magnetic anomaly maps for structural assessment. Upload CSV flight logs and get georeferenced heatmaps in minutes.
+FluxSpace is a SaaS platform for processing drone magnetometer data to generate 2D and 3D magnetic anomaly maps used in structural and subsurface assessments. Users can upload flight log CSV files and receive georeferenced heatmaps and processed outputs in minutes.
 
 ## Features
 
-- 🚁 **Drone Data Processing** - Upload magnetometer CSV logs (time, lat/lon, alt, attitude, Bx/By/Bz)
-- 🗺️ **Interactive Map Viewer** - MapLibre GL with heatmap overlays, color ramps, and opacity controls
-- 📊 **Dual-Sensor Support** - Automatic gradiometer ΔB calculation for enhanced anomaly detection
-- 🎯 **High Resolution** - 10-25cm pixel resolution with automatic UTM projection
-- 📦 **Export Options** - Download GeoTIFF, PNG previews, and CSV gridded data
-- 💳 **Stripe Integration** - Subscription billing with usage metering
-- 🔐 **Secure Auth** - Supabase authentication with row-level security
-- 🌓 **Dark Mode** - Full dark mode support with magnetic heatmap color scheme
+### Core Functionality
+- **Drone Data Processing** – Upload magnetometer CSV logs containing time, position, altitude, attitude, and magnetic field data
+- **Interactive Map Viewer** – View processed magnetic maps through MapLibre GL with adjustable heatmap overlays and color scales
+- **Dual-Sensor Support** – Automatically computes magnetic field gradients for higher anomaly sensitivity
+- **High Resolution Output** – Produces 10–25 cm resolution grids with automatic UTM projection
+- **Export Options** – Download results as GeoTIFFs, PNG previews, and CSV grids
+
+### User Experience
+- **Enhanced Navigation** – Dropdown menu system with mobile-responsive hamburger menu
+- **AI-Powered Chatbot** – Interactive support assistant with keyword-based responses
+- **Contact System** – Professional contact form with validation
+- **Why FluxSpace Page** – Comprehensive comparison with traditional methods
+- **Dark Mode Interface** – Full dark/light theme support
+
+### Business Features
+- **Stripe Integration** – Subscription-based billing with usage tracking
+- **Three Pricing Tiers** – Starter (Free), Pro ($29/mo), Team ($99/mo)
+- **Secure Authentication** – Managed through Supabase with row-level security
+- **Usage Monitoring** – Track jobs per month and storage consumption
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router) + TypeScript
-- **Styling**: TailwindCSS + shadcn/ui components
-- **Auth & Database**: Supabase (Postgres + Storage)
-- **Payments**: Stripe (Checkout + Customer Portal)
-- **Maps**: MapLibre GL + deck.gl
-- **Charts**: Recharts
-- **Deployment**: Vercel
+- **Framework:** Next.js 14 (App Router) + TypeScript
+- **Styling:** TailwindCSS + shadcn/ui components
+- **Auth & Database:** Supabase (Postgres + Storage)
+- **Payments:** Stripe (Checkout + Customer Portal)
+- **Maps:** MapLibre GL + deck.gl
+- **Charts:** Recharts
+- **Deployment:** Vercel
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
-
-- Node.js 18+ and npm/yarn/pnpm
-- Supabase account and project
-- Stripe account (test mode for development)
-
-### Installation
-
-1. Clone the repository:
 ```bash
-git clone <your-repo-url>
+# Clone and install
+git clone https://github.com/aidenerard/fluxspace.git
 cd fluxspace
-```
-
-2. Install dependencies:
-```bash
 npm install
-```
 
-3. Set up environment variables:
-```bash
+# Configure environment
 cp .env.example .env.local
-```
+# Edit .env.local with your keys
 
-Edit `.env.local` with your credentials:
+# Set up database (run SQL from SETUP.md in Supabase)
+# Create storage buckets in Supabase
 
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+# Seed demo data
+npm run seed
 
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_STARTER_PRICE_ID=price_...
-STRIPE_PRO_PRICE_ID=price_...
-STRIPE_TEAM_PRICE_ID=price_...
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### Database Setup
-
-Run the following SQL in your Supabase SQL editor to create the required tables:
-
-```sql
--- Users table (extends Supabase auth.users)
-CREATE TABLE IF NOT EXISTS public.users (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  name TEXT,
-  stripe_customer_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Projects table
-CREATE TABLE IF NOT EXISTS public.projects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Uploads table
-CREATE TABLE IF NOT EXISTS public.uploads (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
-  filename TEXT NOT NULL,
-  size_bytes BIGINT NOT NULL,
-  storage_url TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Jobs table
-CREATE TABLE IF NOT EXISTS public.jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
-  upload_id UUID NOT NULL REFERENCES public.uploads(id) ON DELETE CASCADE,
-  status TEXT NOT NULL CHECK (status IN ('queued', 'processing', 'done', 'failed')),
-  params JSONB,
-  result_tif_url TEXT,
-  result_png_url TEXT,
-  result_csv_url TEXT,
-  logs TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Usage counters table
-CREATE TABLE IF NOT EXISTS public.usage_counters (
-  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  month TEXT NOT NULL, -- Format: YYYY-MM
-  jobs_used INTEGER DEFAULT 0,
-  storage_used_bytes BIGINT DEFAULT 0,
-  PRIMARY KEY (user_id, month)
-);
-
--- Enable Row Level Security
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.uploads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.usage_counters ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies
-CREATE POLICY "Users can view own data" ON public.users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own data" ON public.users FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can view own projects" ON public.projects FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can create own projects" ON public.projects FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own projects" ON public.projects FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete own projects" ON public.projects FOR DELETE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can view own uploads" ON public.uploads FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.projects WHERE projects.id = uploads.project_id AND projects.user_id = auth.uid())
-);
-CREATE POLICY "Users can create uploads" ON public.uploads FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.projects WHERE projects.id = uploads.project_id AND projects.user_id = auth.uid())
-);
-
-CREATE POLICY "Users can view own jobs" ON public.jobs FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.projects WHERE projects.id = jobs.project_id AND projects.user_id = auth.uid())
-);
-CREATE POLICY "Users can create jobs" ON public.jobs FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.projects WHERE projects.id = jobs.project_id AND projects.user_id = auth.uid())
-);
-
-CREATE POLICY "Users can view own usage" ON public.usage_counters FOR SELECT USING (auth.uid() = user_id);
-
--- Storage buckets
-INSERT INTO storage.buckets (id, name, public) VALUES ('uploads', 'uploads', false);
-INSERT INTO storage.buckets (id, name, public) VALUES ('results', 'results', false);
-
--- Storage policies
-CREATE POLICY "Users can upload files" ON storage.objects FOR INSERT WITH CHECK (
-  bucket_id = 'uploads' AND auth.uid()::text = (storage.foldername(name))[1]
-);
-CREATE POLICY "Users can view own files" ON storage.objects FOR SELECT USING (
-  bucket_id IN ('uploads', 'results') AND auth.uid()::text = (storage.foldername(name))[1]
-);
-```
-
-### Stripe Setup
-
-1. Create products and prices in Stripe Dashboard:
-   - Starter: $0/month (or free tier)
-   - Pro: $29/month
-   - Team: $99/month
-
-2. Copy the price IDs to your `.env.local`
-
-3. Set up webhook endpoint pointing to `https://your-domain.com/api/stripe/webhook`
-
-4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
-
-### Run Development Server
-
-```bash
+# Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+Open [http://localhost:3000](http://localhost:3000)
 
-### Seed Demo Data
+**Demo Login:**
+- Email: demo@fluxspace.com
+- Password: demo123
 
-Create a demo user and sample project:
+## Documentation
 
-```bash
-npm run seed
-```
-
-This creates:
-- Demo user: `demo@fluxspace.com` (password: `demo123`)
-- Sample project with a processed job
-- Sample result files
+- **README.md** (this file) – Project overview
+- **SETUP.md** – Detailed setup with SQL schema
+- **TODO_CHECKLIST.md** – Implementation roadmap
+- **PROJECT_SUMMARY.md** – Architecture overview
+- **🚀_START_HERE.md** – Quick start guide
 
 ## Project Structure
 
 ```
 fluxspace/
-├── app/                      # Next.js app directory
-│   ├── (auth)/              # Auth-related pages (signin, signup)
-│   ├── dashboard/           # Dashboard pages
-│   ├── viewer/              # Map viewer
-│   ├── docs/                # Documentation pages
-│   ├── api/                 # API routes
-│   │   ├── projects/        # Project CRUD
-│   │   ├── uploads/         # File upload handlers
-│   │   ├── jobs/            # Job processing
-│   │   ├── stripe/          # Stripe webhooks
-│   │   └── account/         # Account management
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Home page
-├── components/              # React components
-│   ├── ui/                  # shadcn/ui components
-│   ├── navbar.tsx           # Navigation bar
-│   ├── footer.tsx           # Footer
-│   └── ...
-├── lib/                     # Utility libraries
-│   ├── supabase.ts          # Supabase client
-│   ├── stripe.ts            # Stripe client
-│   └── utils.ts             # Helper functions
-├── scripts/                 # Utility scripts
-│   └── seed.ts              # Database seeding
-└── public/                  # Static assets
+├── app/                    # Next.js pages
+│   ├── page.tsx           # Landing page
+│   ├── dashboard/         # User dashboard
+│   ├── product/           # Product features
+│   ├── pricing/           # Pricing tiers
+│   ├── docs/              # Documentation
+│   ├── why-fluxspace/     # Benefits page
+│   ├── contact/           # Contact form
+│   ├── support/           # AI chatbot
+│   ├── signin/signup/     # Auth pages
+│   └── api/               # API routes
+├── components/            # React components
+│   ├── navbar.tsx        # Enhanced navigation
+│   └── ui/               # shadcn/ui components
+├── lib/                  # Utilities
+│   ├── supabase.ts      # Database client
+│   ├── stripe.ts        # Payment config
+│   └── utils.ts         # Helpers
+└── scripts/seed.ts      # Demo data
 ```
 
-## Key Features Implementation
+## Key Features Implemented
 
-### File Upload
+**Complete UI/UX**
+- Landing page with hero and features
+- Product, Pricing, Docs pages
+- Enhanced navigation with dropdown menu
+- Mobile hamburger menu
+- Dark mode support
 
-Files are uploaded directly to Supabase Storage with presigned URLs:
+**Authentication**
+- Sign up / Sign in pages
+- Supabase auth integration
+- Protected dashboard routes
 
-1. Client requests signed URL from `/api/uploads/sign`
-2. Client uploads file directly to storage
-3. Server creates upload record in database
+**Database**
+- Full schema with RLS policies
+- Users, projects, uploads, jobs, usage tables
+- Storage buckets for files
 
-### Processing Pipeline
+**New Pages**
+- Why FluxSpace (comparison & use cases)
+- Contact (form with validation)
+- Support (AI chatbot + FAQs)
 
-The processing pipeline (`/api/jobs` route) performs:
+**Payment Structure**
+- Three pricing tiers defined
+- Stripe configuration ready
+- Usage tracking schema
 
-1. **CSV Parsing** - Validate columns and extract magnetometer data
-2. **Frame Rotation** - Convert body-frame B vectors to earth frame using quaternions
-3. **Magnetic Field Calculation** - Compute total |B| or gradiometer ΔB
-4. **Filtering** - Low-pass filter and baseline removal
-5. **Gridding** - Project to UTM, interpolate using IDW/griddata at 10-25cm resolution
-6. **Export** - Generate GeoTIFF (with CRS), PNG preview, and CSV
+## What Needs Implementation
 
-### Map Viewer
+**Priority 1 (Core Features)**
+- File upload with drag-and-drop
+- Processing pipeline (CSV → GeoTIFF)
+- Map viewer with heatmap overlay
+- Stripe webhook handlers
 
-Interactive viewer built with MapLibre GL featuring:
+**Priority 2 (Polish)**
+- Project detail pages
+- Account management page
+- Plan limit enforcement
+- Email notifications
 
-- Basemap selection
-- Orthomosaic overlay (optional)
-- Magnetic anomaly heatmap with customizable color ramps (Viridis, Inferno, etc.)
-- Opacity controls
-- Legend showing ΔB in nanoTeslas
-- Download buttons for all result formats
+See `TODO_CHECKLIST.md` for complete roadmap.
 
-### Billing & Usage
+## CSV Data Format
 
-- Stripe Checkout for subscriptions
-- Usage metering (jobs/month, storage)
-- Customer portal for managing subscriptions
-- Plan limit enforcement with friendly upgrade prompts
-
-## CSV Schema
-
-Required columns for flight log CSV:
-
-```
-time       - Unix timestamp (seconds)
-lat        - Latitude (WGS84 decimal degrees)
-lon        - Longitude (WGS84 decimal degrees)
-alt        - Altitude (meters)
-roll       - Roll angle (degrees)
-pitch      - Pitch angle (degrees)
-yaw        - Yaw angle (degrees)
-Bx         - Magnetic field X component (nT, body frame)
-By         - Magnetic field Y component (nT, body frame)
-Bz         - Magnetic field Z component (nT, body frame)
+```csv
+time,lat,lon,alt,roll,pitch,yaw,Bx,By,Bz
+1678901234.5,37.7749,-122.4194,100.0,0.1,-0.2,45.3,25000,1500,-40000
 ```
 
-Optional for gradiometer mode:
-```
-Bx2, By2, Bz2  - Second sensor readings
-```
+**Required columns:**
+- time (Unix timestamp)
+- lat, lon (WGS84 degrees)
+- alt (meters)
+- roll, pitch, yaw (degrees)
+- Bx, By, Bz (nanoTeslas, body frame)
+
+**Optional:** Bx2, By2, Bz2 for gradiometer
 
 ## Deployment
 
-### Vercel Deployment
+### Vercel
 
-1. Push code to GitHub
-2. Import project in Vercel
-3. Add environment variables
-4. Deploy
+```bash
+# Push to GitHub
+git push origin main
 
-### Environment Variables on Vercel
-
-Make sure to add all variables from `.env.example` in Vercel project settings.
+# Deploy on Vercel
+# 1. Import from GitHub
+# 2. Add environment variables
+# 3. Deploy
+```
 
 ### Post-Deployment
-
-1. Update Stripe webhook endpoint to production URL
-2. Update `NEXT_PUBLIC_APP_URL` to production domain
-3. Configure Supabase redirect URLs for auth
-
-## Performance
-
-- Lighthouse scores: ≥90 on all metrics
-- Image optimization with Next.js Image
-- Route-level code splitting
-- ISR for marketing pages
-- Server-side rendering for dashboard
+- Update Stripe webhook URL
+- Configure Supabase redirect URLs
+- Set production app URL
 
 ## Security
 
-- Row-level security (RLS) in Supabase
+- Row-Level Security (RLS) on all tables
 - Signed URLs for file access
-- CSRF protection on mutations
+- HTTP-only cookies for auth
 - Input validation with Zod
-- Cookie-based auth with httpOnly
+- Environment secrets never committed
 
-## Testing
+## Support & Contact
 
-```bash
-# Run unit tests
-npm test
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-```
-
-## Support
-
-- **Documentation**: Check `/docs` for detailed guides
-- **Contact**: Use the contact form at `/support`
-- **Issues**: Open an issue on GitHub
+- **AI Chatbot:** Visit `/support`
+- **Contact Form:** Visit `/contact`
+- **Documentation:** Visit `/docs`
+- **GitHub:** [aidenerard/fluxspace](https://github.com/aidenerard/fluxspace)
 
 ## License
 
-Proprietary - All rights reserved
+Proprietary – All rights reserved
 
-## Acknowledgments
+---
 
-- Built with [Next.js](https://nextjs.org/)
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Maps powered by [MapLibre GL](https://maplibre.org/)
-- Payments by [Stripe](https://stripe.com/)
-- Backend by [Supabase](https://supabase.com/)
+**Built for structural engineers and inspection professionals** 🚀
