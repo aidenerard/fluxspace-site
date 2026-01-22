@@ -1,11 +1,45 @@
+"use client"
+
 import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Database, CheckCircle2, TrendingUp, Image as ImageIcon } from "lucide-react"
+import { ArrowRight, Database, CheckCircle2, TrendingUp, Image as ImageIcon, List } from "lucide-react"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 
 export default function PipelinePage() {
+  const [activeSection, setActiveSection] = useState("")
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ["overview", "workflow", "data-flow", "concepts", "cta"]
+      const scrollPosition = window.scrollY + 100
+
+      for (const section of sections) {
+        const element = document.getElementById(section)
+        if (element) {
+          const { offsetTop, offsetHeight } = element
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(section)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    handleScroll()
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id)
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }
+
   const pipelineSteps = [
     {
       step: 1,
@@ -73,24 +107,93 @@ export default function PipelinePage() {
     }
   ]
 
+  const navItems = [
+    { id: "overview", label: "Overview" },
+    { id: "workflow", label: "Pipeline Workflow" },
+    { id: "data-flow", label: "Data Flow" },
+    { id: "concepts", label: "Key Concepts" },
+    { id: "cta", label: "Next Steps" },
+  ]
+
   return (
     <div className="flex flex-col min-h-screen">
       <NavBar />
       
-      {/* Hero Section */}
-      <section className="flex-1 py-24">
-        <div className="container max-w-6xl px-4">
-          <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Fluxspace Core Pipeline
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              A complete workflow for processing magnetic field measurements from sensor data to actionable visualizations
-            </p>
-          </div>
+      <div className="flex-1 py-24">
+        <div className="container max-w-7xl px-4">
+          <div className="flex gap-8">
+            {/* Sidebar Navigation - Desktop */}
+            <aside className="hidden lg:block w-64 flex-shrink-0">
+              <div className="sticky top-24">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <List className="h-4 w-4" />
+                      <CardTitle className="text-sm">Navigation</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <nav className="space-y-1 p-4">
+                      {navItems.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => scrollToSection(item.id)}
+                          className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                            activeSection === item.id
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </nav>
+                  </CardContent>
+                </Card>
+              </div>
+            </aside>
 
-          {/* Pipeline Workflow */}
-          <div className="space-y-8 mb-16">
+            {/* Mobile Navigation - Sticky Top */}
+            <div className="lg:hidden mb-8">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    {navItems.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => scrollToSection(item.id)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-md text-sm transition-colors flex-shrink-0 ${
+                          activeSection === item.id
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              {/* Hero Section */}
+              <section id="overview" className="mb-16">
+                <div className="text-center mb-16">
+                  <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                    Fluxspace Core Pipeline
+                  </h1>
+                  <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                    A complete workflow for processing magnetic field measurements from sensor data to actionable visualizations
+                  </p>
+                </div>
+              </section>
+
+              {/* Pipeline Workflow */}
+              <section id="workflow" className="mb-16">
+                <h2 className="text-3xl font-bold mb-8">Pipeline Workflow</h2>
+                <div className="space-y-8">
             {pipelineSteps.map((step, index) => (
               <div key={step.step} className="relative">
                 {/* Connection Line */}
@@ -140,11 +243,12 @@ export default function PipelinePage() {
                 </Card>
               </div>
             ))}
-          </div>
+                </div>
+              </section>
 
-          {/* Data Flow Diagram */}
-          <section className="mb-16">
-            <h2 className="text-3xl font-bold mb-8 text-center">Data Flow</h2>
+              {/* Data Flow Diagram */}
+              <section id="data-flow" className="mb-16">
+                <h2 className="text-3xl font-bold mb-8">Data Flow</h2>
             <Card>
               <CardContent className="p-8">
                 <div className="space-y-4">
@@ -173,11 +277,11 @@ export default function PipelinePage() {
                 </div>
               </CardContent>
             </Card>
-          </section>
+              </section>
 
-          {/* Key Concepts */}
-          <section className="mb-16">
-            <h2 className="text-3xl font-bold mb-8 text-center">Key Concepts</h2>
+              {/* Key Concepts */}
+              <section id="concepts" className="mb-16">
+                <h2 className="text-3xl font-bold mb-8">Key Concepts</h2>
             <div className="grid md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
@@ -213,10 +317,10 @@ export default function PipelinePage() {
                 </CardContent>
               </Card>
             </div>
-          </section>
+              </section>
 
-          {/* CTA */}
-          <section className="text-center">
+              {/* CTA */}
+              <section id="cta" className="text-center">
             <div className="grid md:grid-cols-2 gap-6">
               <Card className="bg-muted/50">
                 <CardContent className="p-8">
@@ -250,10 +354,11 @@ export default function PipelinePage() {
                   </Link>
                 </CardContent>
               </Card>
+              </section>
             </div>
-          </section>
+          </div>
         </div>
-      </section>
+      </div>
 
       <Footer />
     </div>

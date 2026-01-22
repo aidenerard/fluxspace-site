@@ -62,27 +62,6 @@ export function NavBar() {
         <div className="flex items-center gap-2">
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-2">
-            {/* More dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  More
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Company</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {moreLinks.map((link) => (
-                  <DropdownMenuItem key={link.href} asChild>
-                    <Link href={link.href} className="cursor-pointer">
-                      <link.icon className="mr-2 h-4 w-4" />
-                      {link.label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             <Button
               variant="ghost"
               size="icon"
@@ -99,6 +78,28 @@ export function NavBar() {
             <Button size="sm" asChild>
               <Link href="/signup">Get started</Link>
             </Button>
+
+            {/* Hamburger menu dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Company</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {moreLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild>
+                    <Link href={link.href} className="cursor-pointer">
+                      <link.icon className="mr-2 h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Menu */}
