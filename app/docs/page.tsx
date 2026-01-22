@@ -1,6 +1,7 @@
 import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link"
 
 export default function DocsPage() {
   return (
@@ -73,7 +74,12 @@ Bz         - Magnetic field Z component (nT, body frame)`}</code>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4">Processing Pipeline</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Processing Pipeline</h2>
+                <Link href="/docs/pipeline" className="text-sm text-primary hover:underline">
+                  View detailed pipeline docs →
+                </Link>
+              </div>
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">1. Frame Rotation</h3>
@@ -132,6 +138,42 @@ Bz         - Magnetic field Z component (nT, body frame)`}</code>
                     Yes, you can optionally upload a GeoTIFF orthomosaic for alignment with the magnetic anomaly layer.
                   </p>
                 </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold mb-4">Additional Resources</h2>
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold mb-2">Pipeline Documentation</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Detailed documentation for the complete data processing pipeline, including all scripts and workflows.
+                        </p>
+                        <Link href="/docs/pipeline" className="text-sm text-primary hover:underline">
+                          View Pipeline Docs →
+                        </Link>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold mb-2">Examples & Results</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          See real-world examples with actual data showing the complete pipeline workflow from raw measurements to final visualizations.
+                        </p>
+                        <Link href="/docs/examples" className="text-sm text-primary hover:underline">
+                          View Examples →
+                        </Link>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </section>
           </div>

@@ -23,6 +23,7 @@ export function NavBar() {
 
   const mainLinks = [
     { href: "/product", label: "Product" },
+    { href: "/pipeline", label: "Pipeline" },
     { href: "/pricing", label: "Pricing" },
     { href: "/docs", label: "Docs" },
   ]
