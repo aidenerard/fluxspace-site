@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, TrendingUp, CheckCircle2, Image as ImageIcon, Database } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function ExamplesPage() {
   const rawDataSample = `time,x,y,Bx,By,Bz,B_total,units
@@ -231,10 +232,11 @@ export default function ExamplesPage() {
                         <li>• XY scatter plot colored by B_total - Spatial distribution of measurements</li>
                         <li>• Spike deltas plot - Identification of sudden changes between measurements</li>
                       </ul>
-                      <div className="mt-4 space-y-4">
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <h5 className="text-sm font-semibold mb-2">B_total over time</h5>
-                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/images/pipeline/btotal_vs_time.png"
                               alt="B_total over time showing magnetic field variation"
@@ -243,7 +245,7 @@ export default function ExamplesPage() {
                                 const target = e.target as HTMLImageElement
                                 target.style.display = 'none'
                                 if (target.parentElement) {
-                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once btotal_vs_time.png is added to /public/images/pipeline/</p>'
+                                  target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
                                 }
                               }}
                             />
@@ -251,7 +253,8 @@ export default function ExamplesPage() {
                         </div>
                         <div>
                           <h5 className="text-sm font-semibold mb-2">Histogram of B_total</h5>
-                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/images/pipeline/btotal_hist.png"
                               alt="Histogram showing distribution of B_total values"
@@ -260,7 +263,7 @@ export default function ExamplesPage() {
                                 const target = e.target as HTMLImageElement
                                 target.style.display = 'none'
                                 if (target.parentElement) {
-                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once btotal_hist.png is added to /public/images/pipeline/</p>'
+                                  target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
                                 }
                               }}
                             />
@@ -268,7 +271,8 @@ export default function ExamplesPage() {
                         </div>
                         <div>
                           <h5 className="text-sm font-semibold mb-2">XY scatter plot colored by B_total</h5>
-                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/images/pipeline/scatter_xy_colored.png"
                               alt="Spatial distribution of measurements colored by B_total"
@@ -277,7 +281,7 @@ export default function ExamplesPage() {
                                 const target = e.target as HTMLImageElement
                                 target.style.display = 'none'
                                 if (target.parentElement) {
-                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once scatter_xy_colored.png is added to /public/images/pipeline/</p>'
+                                  target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
                                 }
                               }}
                             />
@@ -285,7 +289,8 @@ export default function ExamplesPage() {
                         </div>
                         <div>
                           <h5 className="text-sm font-semibold mb-2">Per-sample |ΔB_total| (spike check)</h5>
-                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/images/pipeline/spike_deltas.png"
                               alt="Spike detection showing sudden changes between measurements"
@@ -294,7 +299,7 @@ export default function ExamplesPage() {
                                 const target = e.target as HTMLImageElement
                                 target.style.display = 'none'
                                 if (target.parentElement) {
-                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once spike_deltas.png is added to /public/images/pipeline/</p>'
+                                  target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
                                 }
                               }}
                             />
@@ -382,6 +387,7 @@ export default function ExamplesPage() {
                       <div className="mt-4">
                         <h5 className="text-sm font-semibold mb-2">Heatmap (IDW) of local_anomaly</h5>
                         <div className="w-full h-96 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src="/images/pipeline/heatmap_anomaly.png"
                             alt="Heatmap showing spatial distribution of local magnetic anomalies using IDW interpolation"
