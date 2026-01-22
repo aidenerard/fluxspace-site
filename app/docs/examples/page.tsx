@@ -5,7 +5,6 @@ import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, TrendingUp, CheckCircle2, Image as ImageIcon, Database } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
 
 export default function ExamplesPage() {
   const rawDataSample = `time,x,y,Bx,By,Bz,B_total,units
