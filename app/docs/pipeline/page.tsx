@@ -1,3 +1,5 @@
+"use client"
+
 import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -186,6 +188,107 @@ export default function PipelineDocsPage() {
                         </pre>
                       </div>
                     </div>
+
+                    {/* Add diagnostic plots for validation script */}
+                    {script.name === "validate_and_diagnosticsV1.py" && (
+                      <div className="mt-6">
+                        <h3 className="font-semibold mb-4">Example Diagnostic Plots</h3>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">B_total over time</h4>
+                            <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                              <img
+                                src="/images/pipeline/btotal_vs_time.png"
+                                alt="B_total over time showing magnetic field variation"
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  if (target.parentElement) {
+                                    target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Histogram of B_total</h4>
+                            <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                              <img
+                                src="/images/pipeline/btotal_hist.png"
+                                alt="Histogram showing distribution of B_total values"
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  if (target.parentElement) {
+                                    target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">XY scatter plot</h4>
+                            <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                              <img
+                                src="/images/pipeline/scatter_xy_colored.png"
+                                alt="Spatial distribution of measurements colored by B_total"
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  if (target.parentElement) {
+                                    target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Spike detection</h4>
+                            <div className="w-full h-48 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                              <img
+                                src="/images/pipeline/spike_deltas.png"
+                                alt="Spike detection showing sudden changes between measurements"
+                                className="max-w-full max-h-full object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  if (target.parentElement) {
+                                    target.parentElement.innerHTML = '<p class="text-xs text-muted-foreground p-2 text-center">Image placeholder</p>'
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Add heatmap for visualization script */}
+                    {script.name === "interpolate_to_heatmapV1.py" && (
+                      <div className="mt-6">
+                        <h3 className="font-semibold mb-4">Example Heatmap Output</h3>
+                        <div className="w-full h-96 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          <img
+                            src="/images/pipeline/heatmap_anomaly.png"
+                            alt="Heatmap showing spatial distribution of local magnetic anomalies using IDW interpolation"
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                              if (target.parentElement) {
+                                target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image placeholder - add heatmap_anomaly.png to /public/images/pipeline/</p>'
+                              }
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          The heatmap visualizes local anomalies with color gradients: yellow/red for high positive anomalies, green for neutral, and blue/purple for low negative anomalies.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

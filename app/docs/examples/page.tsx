@@ -1,8 +1,11 @@
+"use client"
+
 import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, TrendingUp, CheckCircle2, Image as ImageIcon, Database } from "lucide-react"
 import Link from "next/link"
+import { useState } from "react"
 
 export default function ExamplesPage() {
   const rawDataSample = `time,x,y,Bx,By,Bz,B_total,units
@@ -229,9 +232,76 @@ export default function ExamplesPage() {
                         <li>• XY scatter plot colored by B_total - Spatial distribution of measurements</li>
                         <li>• Spike deltas plot - Identification of sudden changes between measurements</li>
                       </ul>
-                      <p className="text-sm text-muted-foreground mt-3 italic">
-                        Note: Diagnostic plot images can be added here when available.
-                      </p>
+                      <div className="mt-4 space-y-4">
+                        <div>
+                          <h5 className="text-sm font-semibold mb-2">B_total over time</h5>
+                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            <img
+                              src="/images/pipeline/btotal_vs_time.png"
+                              alt="B_total over time showing magnetic field variation"
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                if (target.parentElement) {
+                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once btotal_vs_time.png is added to /public/images/pipeline/</p>'
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-semibold mb-2">Histogram of B_total</h5>
+                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            <img
+                              src="/images/pipeline/btotal_hist.png"
+                              alt="Histogram showing distribution of B_total values"
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                if (target.parentElement) {
+                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once btotal_hist.png is added to /public/images/pipeline/</p>'
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-semibold mb-2">XY scatter plot colored by B_total</h5>
+                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            <img
+                              src="/images/pipeline/scatter_xy_colored.png"
+                              alt="Spatial distribution of measurements colored by B_total"
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                if (target.parentElement) {
+                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once scatter_xy_colored.png is added to /public/images/pipeline/</p>'
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <h5 className="text-sm font-semibold mb-2">Per-sample |ΔB_total| (spike check)</h5>
+                          <div className="w-full h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                            <img
+                              src="/images/pipeline/spike_deltas.png"
+                              alt="Spike detection showing sudden changes between measurements"
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                if (target.parentElement) {
+                                  target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once spike_deltas.png is added to /public/images/pipeline/</p>'
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -310,9 +380,26 @@ export default function ExamplesPage() {
                         <li>• <strong>Green regions:</strong> Neutral anomalies (similar to neighborhood average)</li>
                         <li>• <strong>Blue/Purple regions:</strong> Low negative anomalies (weaker magnetic field than neighbors)</li>
                       </ul>
-                      <p className="text-sm text-muted-foreground mt-3 italic">
-                        Note: Heatmap images can be added here when available. The example shows distinct anomaly patterns with several hotspots and coldspots distributed across the measurement grid.
-                      </p>
+                      <div className="mt-4">
+                        <h5 className="text-sm font-semibold mb-2">Heatmap (IDW) of local_anomaly</h5>
+                        <div className="w-full h-96 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                          <img
+                            src="/images/pipeline/heatmap_anomaly.png"
+                            alt="Heatmap showing spatial distribution of local magnetic anomalies using IDW interpolation"
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.style.display = 'none'
+                              if (target.parentElement) {
+                                target.parentElement.innerHTML = '<p class="text-sm text-muted-foreground p-4 text-center">Image will appear here once heatmap_anomaly.png is added to /public/images/pipeline/</p>'
+                              }
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          The heatmap shows distinct anomaly patterns with several hotspots (yellow) and coldspots (blue/purple) distributed across the measurement grid.
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
