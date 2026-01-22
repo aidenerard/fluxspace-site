@@ -12,6 +12,8 @@ export default function PipelinePage() {
   const [activeSection, setActiveSection] = useState("")
 
   useEffect(() => {
+    if (typeof window === "undefined") return
+
     const handleScroll = () => {
       const sections = ["overview", "workflow", "data-flow", "concepts", "cta"]
       const scrollPosition = window.scrollY + 100
@@ -34,6 +36,7 @@ export default function PipelinePage() {
   }, [])
 
   const scrollToSection = (id: string) => {
+    if (typeof window === "undefined") return
     const element = document.getElementById(id)
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" })
