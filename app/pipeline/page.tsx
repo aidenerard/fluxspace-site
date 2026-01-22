@@ -124,6 +124,29 @@ export default function PipelinePage() {
       
       <div className="flex-1 py-24">
         <div className="container max-w-7xl px-4">
+          {/* Mobile Navigation - Sticky Top */}
+          <div className="lg:hidden mb-8">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  {navItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => scrollToSection(item.id)}
+                      className={`whitespace-nowrap px-4 py-2 rounded-md text-sm transition-colors flex-shrink-0 ${
+                        activeSection === item.id
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="flex gap-8">
             {/* Sidebar Navigation - Desktop */}
             <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -155,29 +178,6 @@ export default function PipelinePage() {
                 </Card>
               </div>
             </aside>
-
-            {/* Mobile Navigation - Sticky Top */}
-            <div className="lg:hidden mb-8">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                    {navItems.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => scrollToSection(item.id)}
-                        className={`whitespace-nowrap px-4 py-2 rounded-md text-sm transition-colors flex-shrink-0 ${
-                          activeSection === item.id
-                            ? "bg-primary text-primary-foreground font-medium"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
 
             {/* Main Content */}
             <div className="flex-1 min-w-0">
@@ -324,39 +324,40 @@ export default function PipelinePage() {
 
               {/* CTA */}
               <section id="cta" className="text-center">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="bg-muted/50">
-                <CardContent className="p-8">
-                  <h2 className="text-2xl font-bold mb-4">
-                    Ready to dive deeper?
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    View detailed documentation for each script in the pipeline
-                  </p>
-                  <Link href="/docs/pipeline">
-                    <Button size="lg">
-                      View Detailed Documentation
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-8">
-                  <h2 className="text-2xl font-bold mb-4">
-                    See Real Examples
-                  </h2>
-                  <p className="text-muted-foreground mb-6">
-                    Explore actual pipeline results with real data from a complete workflow run
-                  </p>
-                  <Link href="/docs/examples">
-                    <Button size="lg" variant="outline">
-                      View Examples & Results
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-8">
+                      <h2 className="text-2xl font-bold mb-4">
+                        Ready to dive deeper?
+                      </h2>
+                      <p className="text-muted-foreground mb-6">
+                        View detailed documentation for each script in the pipeline
+                      </p>
+                      <Link href="/docs/pipeline">
+                        <Button size="lg">
+                          View Detailed Documentation
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-primary/5 border-primary/20">
+                    <CardContent className="p-8">
+                      <h2 className="text-2xl font-bold mb-4">
+                        See Real Examples
+                      </h2>
+                      <p className="text-muted-foreground mb-6">
+                        Explore actual pipeline results with real data from a complete workflow run
+                      </p>
+                      <Link href="/docs/examples">
+                        <Button size="lg" variant="outline">
+                          View Examples & Results
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </div>
               </section>
             </div>
           </div>
