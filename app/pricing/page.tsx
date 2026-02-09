@@ -5,91 +5,164 @@ import Link from "next/link"
 import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 
+/* ------------------------------------------------------------------ */
+/*  Single source of truth for all pricing data                        */
+/* ------------------------------------------------------------------ */
+
 const plans = [
   {
     name: "Starter",
-    price: "$0",
-    description: "Perfect for getting started",
+    tagline: "Per-scan",
+    price: "$499",
+    priceSuffix: "per scan",
+    description: "Best for one-off projects and trial jobs",
     features: [
-      "2 projects",
-      "3 jobs per month",
-      "2 GB storage",
-      "Community support",
+      "Up to 1,000 sq ft scan area",
+      "2D detection + anomaly outputs",
+      "Basic PDF report",
+      "48-hour turnaround",
+      "Additional area billed as add-on",
     ],
-    cta: "Start free",
-    href: "/signup",
+    cta: "Request a scan",
+    href: "/contact",
+    popular: false,
   },
   {
     name: "Pro",
-    price: "$29",
-    description: "For professionals and small teams",
+    tagline: "Monthly",
+    price: "$1,999",
+    priceSuffix: "/month",
+    description: "Best for contractors doing recurring jobs",
     features: [
-      "10 projects",
-      "30 jobs per month",
-      "25 GB storage",
-      "Email support",
+      "Up to 8 scans per month (each up to 1,000 sq ft)",
+      "Priority scheduling",
+      "Team access for 3 users",
+      "Standard deliverables included",
+      "$299 per additional scan",
     ],
-    cta: "Get started",
-    href: "/signup?plan=pro",
+    cta: "Start Pro",
+    href: "/contact?plan=pro",
     popular: true,
   },
   {
-    name: "Team",
-    price: "$99",
-    description: "For larger teams and organizations",
+    name: "Enterprise",
+    tagline: "Custom",
+    price: "Custom",
+    priceSuffix: null,
+    description: "Best for multi-site teams and engineering firms",
     features: [
-      "Unlimited projects",
-      "150 jobs per month",
-      "200 GB storage",
-      "Priority support",
+      "Custom scan volume",
+      "Multi-site workflows",
+      "Dedicated support",
+      "Custom reporting formats",
+      "Integration options",
     ],
-    cta: "Get started",
-    href: "/signup?plan=team",
+    cta: "Talk to sales",
+    href: "/contact?plan=enterprise",
+    popular: false,
   },
 ]
+
+const addOns = [
+  { name: "Extra area", price: "$0.35 / sq ft over included limit" },
+  { name: "24-hour turnaround", price: "+$250 per scan" },
+  { name: "3D mapping package (early access)", price: "+$750 per scan" },
+  { name: "On-site repeat scan / verification visit", price: "+$500" },
+  { name: "Data export bundle", price: "+$200", note: "Raw + processed + geo-tagged outputs when available" },
+]
+
+const faqs = [
+  {
+    question: "What counts as one scan?",
+    answer:
+      "A single scan covers up to 1,000 sq ft of contiguous area. If your site is larger, extra area is billed at $0.35 per sq ft over the included limit.",
+  },
+  {
+    question: "Can I upgrade or downgrade anytime?",
+    answer:
+      "Yes. You can switch between Starter (per-scan) and Pro (monthly) at any time. Changes take effect on your next billing cycle.",
+  },
+  {
+    question: "What deliverables are included?",
+    answer:
+      "Every scan includes 2D anomaly detection outputs and a PDF report. Add-ons like 3D mapping and raw data exports are available for an additional fee.",
+  },
+  {
+    question: "How fast do I get results?",
+    answer:
+      "Standard turnaround is 48 hours. Pro subscribers get priority scheduling. You can add 24-hour rush turnaround to any scan for $250.",
+  },
+]
+
+/* ------------------------------------------------------------------ */
+/*  Page component                                                     */
+/* ------------------------------------------------------------------ */
 
 export default function PricingPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <NavBar />
-      
+
       <div className="flex-1 py-24">
         <div className="container max-w-6xl px-4">
+          {/* Header */}
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Simple, transparent pricing
+              Simple pricing for scans and ongoing projects.
             </h1>
             <p className="text-xl text-muted-foreground">
-              Choose the plan that fits your needs. All plans include core features.
+              Start with one scan, or subscribe if you scan often.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {/* Plan cards */}
+          <div className="grid md:grid-cols-3 gap-8 mb-20">
             {plans.map((plan) => (
-              <Card key={plan.name} className={plan.popular ? "border-primary shadow-lg" : ""}>
+              <Card
+                key={plan.name}
+                className={
+                  plan.popular
+                    ? "border-primary shadow-lg relative"
+                    : "relative"
+                }
+              >
                 {plan.popular && (
-                  <div className="bg-primary text-primary-foreground text-xs font-semibold text-center py-1">
-                    MOST POPULAR
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+                      Most popular
+                    </span>
                   </div>
                 )}
-                <CardHeader>
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+
+                <CardHeader className="pt-8">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                    <span className="text-xs text-muted-foreground border rounded-full px-2 py-0.5">
+                      {plan.tagline}
+                    </span>
+                  </div>
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="mt-4">
                     <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.price !== "$0" && <span className="text-muted-foreground">/month</span>}
+                    {plan.priceSuffix && (
+                      <span className="text-muted-foreground ml-1">
+                        {plan.priceSuffix}
+                      </span>
+                    )}
                   </div>
                 </CardHeader>
+
                 <CardContent>
                   <ul className="space-y-3">
                     {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center">
-                        <Check className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
+                      <li key={feature} className="flex items-start">
+                        <Check className="h-5 w-5 text-primary mr-3 flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
                 </CardContent>
+
                 <CardFooter>
                   <Button
                     asChild
@@ -103,44 +176,62 @@ export default function PricingPage() {
             ))}
           </div>
 
-          <div className="bg-muted rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Need more?</h2>
-            <p className="text-muted-foreground mb-6">
-              Contact us for custom enterprise plans with higher limits, dedicated support, and on-premise deployment options.
+          {/* Add-ons */}
+          <div className="mb-20">
+            <h2 className="text-2xl font-bold text-center mb-2">
+              Optional add-ons
+            </h2>
+            <p className="text-muted-foreground text-center mb-8">
+              Available with any plan.
             </p>
-            <Button variant="outline" asChild>
-              <Link href="/support">Contact sales</Link>
-            </Button>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {addOns.map((addon) => (
+                <div
+                  key={addon.name}
+                  className="border rounded-lg p-4 flex flex-col justify-between"
+                >
+                  <div>
+                    <p className="font-medium text-sm">{addon.name}</p>
+                    {addon.note && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {addon.note}
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-sm font-semibold mt-2">{addon.price}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold text-center mb-8">Frequently asked questions</h2>
+          {/* FAQ */}
+          <div className="mb-20">
+            <h2 className="text-2xl font-bold text-center mb-8">
+              Frequently asked questions
+            </h2>
             <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="font-semibold mb-2">What happens when I exceed my plan limits?</h3>
-                <p className="text-sm text-muted-foreground">
-                  You$apos;ll receive a friendly notice when approaching limits. Processing will pause at hard limits until you upgrade or the next billing cycle.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Can I upgrade or downgrade anytime?</h3>
-                <p className="text-sm text-muted-foreground">
-                  Yes. Changes take effect immediately and we$apos;ll prorate the difference on your next invoice.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">What file formats do you support?</h3>
-                <p className="text-sm text-muted-foreground">
-                  We accept CSV flight logs with specified schema. Optional orthomosaic uploads support GeoTIFF format.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Is my data secure?</h3>
-                <p className="text-sm text-muted-foreground">
-                  All data is encrypted at rest and in transit. Files are stored with per-user access controls and signed URLs.
-                </p>
-              </div>
+              {faqs.map((faq) => (
+                <div key={faq.question}>
+                  <h3 className="font-semibold mb-2">{faq.question}</h3>
+                  <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* Questions */}
+          <div className="bg-muted rounded-lg p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Questions?</h2>
+            <p className="text-muted-foreground mb-6">
+              Reach out and we&apos;ll help you figure out the right option for
+              your project.
+            </p>
+            <Button variant="outline" asChild>
+              <Link href="mailto:sales@fluxspace.com">
+                sales@fluxspace.com
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

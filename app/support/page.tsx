@@ -42,7 +42,7 @@ export default function SupportPage() {
     if (lowerInput.includes("csv") || lowerInput.includes("upload") || lowerInput.includes("file")) {
       response = "To upload a CSV file, go to your Dashboard → select a project → click Upload. Your CSV must include columns: time, lat, lon, alt, roll, pitch, yaw, Bx, By, Bz. Maximum file size is 2GB. Check our Docs page for the complete schema."
     } else if (lowerInput.includes("price") || lowerInput.includes("cost") || lowerInput.includes("plan")) {
-      response = "We offer 3 plans:\n\n• Starter (Free): 2 projects, 3 jobs/mo, 2GB storage\n• Pro ($29/mo): 10 projects, 30 jobs/mo, 25GB storage\n• Team ($99/mo): Unlimited projects, 150 jobs/mo, 200GB storage\n\nCheck our Pricing page for details!"
+      response = "We offer 3 options:\n\n• Starter ($499/scan): Up to 1,000 sq ft, 2D detection + PDF report, 48-hr turnaround\n• Pro ($1,999/mo): Up to 8 scans/month, priority scheduling, team access for 3 users\n• Enterprise (custom): Custom volume, multi-site workflows, dedicated support\n\nAdd-ons like 24-hr rush, 3D mapping, and data exports are available. Check our Pricing page for details!"
     } else if (lowerInput.includes("process") || lowerInput.includes("how long") || lowerInput.includes("time")) {
       response = "Processing typically takes 2-5 minutes depending on file size. You'll receive an email notification when your job completes. The pipeline handles frame rotation, filtering, gridding, and GeoTIFF generation automatically."
     } else if (lowerInput.includes("format") || lowerInput.includes("geotiff") || lowerInput.includes("export")) {
@@ -66,7 +66,7 @@ export default function SupportPage() {
     },
     {
       question: "What are the pricing plans?",
-      answer: "Starter (Free), Pro ($29/mo), and Team ($99/mo). See Pricing page for details."
+      answer: "Starter ($499/scan), Pro ($1,999/mo for up to 8 scans), and Enterprise (custom). See Pricing page for details."
     },
     {
       question: "How long does processing take?",

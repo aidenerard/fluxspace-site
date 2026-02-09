@@ -175,14 +175,19 @@ export default function Home() {
             Start mapping anomalies today
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Free trial includes 3 processing jobs and 2GB of storage. No credit card required.
+            Request a single scan starting at $499, or subscribe for recurring projects.
           </p>
-          <Button size="lg" asChild>
-            <Link href="/signup">
-              Get started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" asChild>
+              <Link href="/contact">
+                Request a scan
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/pricing">View pricing</Link>
+            </Button>
+          </div>
         </div>
       </section>
 

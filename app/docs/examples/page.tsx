@@ -3,7 +3,7 @@
 import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, TrendingUp, CheckCircle2, Image as ImageIcon, Database } from "lucide-react"
+import { FileText, TrendingUp, CheckCircle2, Image as ImageIcon, Database, Upload } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -471,7 +471,20 @@ export default function ExamplesPage() {
 
           {/* Navigation */}
           <section>
-            <div className="flex gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <Link href="/process" className="flex-1">
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <Upload className="h-5 w-5 text-primary" />
+                      <div>
+                        <h3 className="font-semibold">Process Your Data</h3>
+                        <p className="text-sm text-muted-foreground">Upload and process mag_data.csv</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
               <Link href="/docs/pipeline" className="flex-1">
                 <Card className="hover:bg-muted/50 transition-colors">
                   <CardContent className="p-6">
