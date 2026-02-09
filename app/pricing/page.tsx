@@ -17,10 +17,10 @@ const plans = [
     priceSuffix: "per scan",
     description: "Best for one-off projects and trial jobs",
     features: [
-      "Up to 1,000 sq ft scan area",
-      "2D detection + anomaly outputs",
+      "Up to 10,000 sq ft scan area",
+      "3D detection + anomaly outputs",
       "Basic PDF report",
-      "48-hour turnaround",
+      "24-hour turnaround",
       "Additional area billed as add-on",
     ],
     cta: "Request a scan",
@@ -34,7 +34,7 @@ const plans = [
     priceSuffix: "/month",
     description: "Best for contractors doing recurring jobs",
     features: [
-      "Up to 8 scans per month (each up to 1,000 sq ft)",
+      "Up to 8 scans per month (each up to 10,000 sq ft)",
       "Priority scheduling",
       "Team access for 3 users",
       "Standard deliverables included",
@@ -75,7 +75,7 @@ const faqs = [
   {
     question: "What counts as one scan?",
     answer:
-      "A single scan covers up to 1,000 sq ft of contiguous area. If your site is larger, extra area is billed at $0.35 per sq ft over the included limit.",
+      "A single scan covers up to 10,000 sq ft of contiguous area. If your site is larger, extra area is billed at $0.35 per sq ft over the included limit.",
   },
   {
     question: "Can I upgrade or downgrade anytime?",
@@ -90,7 +90,7 @@ const faqs = [
   {
     question: "How fast do I get results?",
     answer:
-      "Standard turnaround is 48 hours. Pro subscribers get priority scheduling. You can add 24-hour rush turnaround to any scan for $250.",
+      "Standard turnaround is 24 hours. Pro subscribers get priority scheduling.",
   },
 ]
 
