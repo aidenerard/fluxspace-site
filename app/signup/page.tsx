@@ -135,11 +135,16 @@ export default function SignUpPage() {
         })
         
         // Still create user record even if not confirmed
-        await supabase.from("users").insert({
-          id: data.user.id,
-          email: data.user.email!,
-          name,
-        }).catch(err => console.error("Error creating user record:", err))
+        try {
+          const { error: insertErr } = await supabase.from("users").insert({
+            id: data.user.id,
+            email: data.user.email!,
+            name,
+          })
+          if (insertErr) console.error("Error creating user record:", insertErr)
+        } catch (err) {
+          console.error("Error creating user record:", err)
+        }
         
         // Show success state with navigation options
         setSignupSuccess(true)

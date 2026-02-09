@@ -92,9 +92,9 @@ export default function TestConnectionPage() {
           <div className="text-sm text-muted-foreground space-y-2">
             <p><strong>What to check:</strong></p>
             <ul className="list-disc list-inside space-y-1">
-              <li>If you see "✗ Missing" for URL or Key, your .env.local file is not being loaded</li>
+              <li>If you see &quot;✗ Missing&quot; for URL or Key, your .env.local file is not being loaded</li>
               <li>If you see connection errors, your keys might be wrong</li>
-              <li>If you see "✓ Connected", your keys are correct!</li>
+              <li>If you see &quot;✓ Connected&quot;, your keys are correct!</li>
             </ul>
           </div>
         </CardContent>
