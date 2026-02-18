@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase"
 import { redirect, notFound } from "next/navigation"
+import { NavBar } from "@/components/navbar"
 import ViewerClient from "./ViewerClient"
 
 export default async function ViewerPage({
@@ -14,7 +15,6 @@ export default async function ViewerPage({
 
   if (!user) redirect("/signin")
 
-  // RLS check — user can only see their own runs
   const { data: run } = await supabase
     .from("runs")
     .select("id")
@@ -23,5 +23,10 @@ export default async function ViewerPage({
 
   if (!run) notFound()
 
-  return <ViewerClient runId={params.id} />
+  return (
+    <div className="flex flex-col min-h-screen">
+      <NavBar />
+      <ViewerClient runId={params.id} />
+    </div>
+  )
 }

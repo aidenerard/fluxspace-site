@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import type { RunRow, RunStatus } from "@/lib/supabase"
+import { NavBar } from "@/components/navbar"
 
 const statusMeta: Record<
   RunStatus,
@@ -250,22 +251,10 @@ export default function RunDetailClient({ runId }: { runId: string }) {
   )
 }
 
-/* ── shared layout shell ─────────────────────────────────── */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/50">
-      <header className="border-b bg-background">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">
-            FluxSpace
-          </Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard/runs/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Upload</Link>
-            <Link href="/dashboard/runs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Runs</Link>
-            <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Account</Link>
-          </nav>
-        </div>
-      </header>
+      <NavBar />
       <div className="container max-w-4xl px-4 py-8">{children}</div>
     </div>
   )

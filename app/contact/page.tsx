@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { NavBar } from "@/components/navbar-new"
+import { NavBar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,7 +41,7 @@ export default function ContactPage() {
               Get in Touch
             </h1>
             <p className="text-xl text-muted-foreground">
-              Have questions? We$apos;re here to help.
+              Have questions? We&apos;re here to help.
             </p>
           </div>
 
@@ -87,7 +87,7 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle>Send us a message</CardTitle>
               <CardDescription>
-                Fill out the form below and we$apos;ll respond within 24 hours.
+                Fill out the form below and we&apos;ll respond within 24 hours.
               </CardDescription>
             </CardHeader>
             <CardContent>

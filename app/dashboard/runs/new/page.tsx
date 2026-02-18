@@ -12,6 +12,7 @@ import {
   ArrowLeft, Upload, FileArchive, Loader2, CheckCircle2, AlertCircle,
 } from "lucide-react"
 import { formatBytes } from "@/lib/utils"
+import { NavBar } from "@/components/navbar"
 
 type Stage = "idle" | "creating" | "uploading" | "triggering" | "done" | "error"
 
@@ -84,16 +85,7 @@ export default function NewRunPage() {
 
   return (
     <div className="min-h-screen bg-muted/50">
-      <header className="border-b bg-background">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">FluxSpace</Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard/runs/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Upload</Link>
-            <Link href="/dashboard/runs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Runs</Link>
-            <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Account</Link>
-          </nav>
-        </div>
-      </header>
+      <NavBar />
 
       <div className="container max-w-2xl px-4 py-8">
         <Button variant="ghost" size="sm" asChild className="mb-6">

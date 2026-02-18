@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FolderOpen, Cpu, HardDrive, Plus, Upload } from "lucide-react"
 import { formatBytes, formatDate } from "@/lib/utils"
+import { NavBar } from "@/components/navbar"
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -30,16 +31,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-muted/50">
-      <header className="border-b bg-background">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">FluxSpace</Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard/runs/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Upload</Link>
-            <Link href="/dashboard/runs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Runs</Link>
-            <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Account</Link>
-          </nav>
-        </div>
-      </header>
+      <NavBar />
 
       <div className="container max-w-7xl px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Dashboard</h1>

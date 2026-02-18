@@ -9,6 +9,7 @@ import Link from "next/link"
 import { Plus, ArrowLeft } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import type { RunStatus } from "@/lib/supabase"
+import { NavBar } from "@/components/navbar"
 
 const statusBadge: Record<RunStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   uploaded:   { label: "Uploaded",   variant: "outline" },
@@ -31,16 +32,7 @@ export default async function RunsListPage() {
 
   return (
     <div className="min-h-screen bg-muted/50">
-      <header className="border-b bg-background">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold">FluxSpace</Link>
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard/runs/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Upload</Link>
-            <Link href="/dashboard/runs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Runs</Link>
-            <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Account</Link>
-          </nav>
-        </div>
-      </header>
+      <NavBar />
 
       <div className="container max-w-5xl px-4 py-8">
         <Button variant="ghost" size="sm" asChild className="mb-4">
