@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useDropzone } from "react-dropzone"
 import {
@@ -9,25 +9,267 @@ import {
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {
-  ArrowLeft, Upload, FileArchive, Loader2, CheckCircle2, AlertCircle,
+  ArrowLeft, Upload, FileArchive, Loader2, CheckCircle2,
+  AlertCircle, XCircle, RotateCcw,
 } from "lucide-react"
 import { formatBytes } from "@/lib/utils"
 import { NavBar } from "@/components/navbar"
 
-type Stage = "idle" | "creating" | "uploading" | "triggering" | "done" | "error"
+/* ── constants ──────────────────────────────────────────── */
+
+const MAX_PART_BYTES = 49 * 1024 * 1024 // 49 MB (safety margin below 50 MB limit)
+const MAX_FILE_BYTES = 1024 * 1024 * 1024 // 1 GB
+const MAX_RETRIES = 3
+const RETRY_DELAYS = [1000, 3000, 5000]
+const STORAGE_KEY = "fluxspace_pending_upload"
+
+type Stage =
+  | "idle"
+  | "creating"
+  | "uploading"
+  | "manifest"
+  | "triggering"
+  | "done"
+  | "error"
+  | "cancelled"
+
+interface PartPlan {
+  index: number
+  start: number
+  end: number
+  size: number
+  key: string
+}
+
+interface PendingUpload {
+  runId: string
+  fileName: string
+  fileSize: number
+  lastModified: number
+  totalParts: number
+}
+
+/* ── helpers ────────────────────────────────────────────── */
+
+function buildPartPlans(fileSize: number, runId: string): PartPlan[] {
+  const parts: PartPlan[] = []
+  let offset = 0
+  let idx = 1
+  while (offset < fileSize) {
+    const end = Math.min(offset + MAX_PART_BYTES, fileSize)
+    const padded = String(idx).padStart(5, "0")
+    parts.push({
+      index: idx,
+      start: offset,
+      end,
+      size: end - offset,
+      key: `runs/${runId}/upload/parts/part_${padded}.bin`,
+    })
+    offset = end
+    idx++
+  }
+  return parts
+}
+
+function savePending(p: PendingUpload) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(p))
+  } catch {}
+}
+
+function loadPending(): PendingUpload | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as PendingUpload) : null
+  } catch {
+    return null
+  }
+}
+
+function clearPending() {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {}
+}
+
+function stripToken(url: string): string {
+  try {
+    const u = new URL(url)
+    u.searchParams.delete("token")
+    return u.toString()
+  } catch {
+    return url.replace(/token=[^&]+/, "token=***")
+  }
+}
+
+/**
+ * Call our Next.js API to obtain a Supabase Storage signed upload URL.
+ * This is the ONLY request that carries auth (via session cookies).
+ */
+async function getSignedUploadUrl(
+  runId: string,
+  objectPath: string,
+  contentType: string,
+): Promise<string> {
+  const res = await fetch(`/api/runs/${runId}/sign-upload`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ objectPath, contentType }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(body.error ?? `Sign failed (${res.status})`)
+  }
+  const { signedUrl } = await res.json()
+  if (!signedUrl || typeof signedUrl !== "string") {
+    throw new Error("Server returned an empty or invalid signed URL")
+  }
+  return signedUrl
+}
+
+/**
+ * PUT a blob to a Supabase Storage signed URL using raw fetch().
+ *
+ * IMPORTANT — CORS rules for this request:
+ *   • Do NOT include Authorization, apikey, x-upsert, or any custom header.
+ *     The signed token embedded in the query string is the sole auth mechanism.
+ *   • Set credentials:"omit" so the browser never attaches cookies to
+ *     this cross-origin request (avoids credentialed-request CORS rules).
+ *   • Do NOT set mode:"no-cors" — we need to read the response status.
+ *   • Send zero explicit headers so the preflight (OPTIONS) only needs the
+ *     server to allow the PUT method, not any extra header names.
+ */
+async function putToSignedUrl(
+  signedUrl: string,
+  blob: Blob,
+  signal: AbortSignal,
+): Promise<void> {
+  const safeUrl = stripToken(signedUrl)
+  let res: Response
+  try {
+    res = await fetch(signedUrl, {
+      method: "PUT",
+      body: blob,
+      credentials: "omit",
+      signal,
+    })
+  } catch (err: any) {
+    if (signal.aborted) throw err
+    console.error("[upload] PUT network error:", safeUrl)
+    throw new Error(
+      `Upload network error: ${err.message}. ` +
+        `Verify the signed URL points to /storage/v1/object/… ` +
+        `and that your Supabase project CORS allows your origin. ` +
+        `PUT target: ${safeUrl}`,
+    )
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "")
+    console.error(`[upload] PUT ${res.status} ${safeUrl}:`, text.slice(0, 300))
+    if (res.status === 413 || text.includes("Maximum size exceeded")) {
+      throw new Error(
+        "Supabase Free plan limits uploads to 50 MB per file. " +
+          "This part exceeded the limit.",
+      )
+    }
+    throw new Error(
+      `Upload failed (HTTP ${res.status}): ${text || res.statusText}. ` +
+        `PUT target: ${safeUrl}`,
+    )
+  }
+}
+
+/**
+ * Upload a blob with retry + re-signing.
+ * Each retry requests a fresh signed URL so that expired or
+ * single-use tokens don't cause permanent failures.
+ */
+async function uploadPartWithRetry(
+  runId: string,
+  objectPath: string,
+  contentType: string,
+  blob: Blob,
+  signal: AbortSignal,
+) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const signedUrl = await getSignedUploadUrl(runId, objectPath, contentType)
+      await putToSignedUrl(signedUrl, blob, signal)
+      return
+    } catch (err: any) {
+      if (signal.aborted) throw err
+      if (attempt === MAX_RETRIES) throw err
+      if (
+        err.message?.includes("50 MB") ||
+        err.message?.includes("Maximum size")
+      ) {
+        throw err
+      }
+      await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt] ?? 5000))
+    }
+  }
+}
+
+/* ── component ──────────────────────────────────────────── */
 
 export default function NewRunPage() {
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [stage, setStage] = useState<Stage>("idle")
   const [progress, setProgress] = useState(0)
+  const [currentPart, setCurrentPart] = useState(0)
+  const [totalParts, setTotalParts] = useState(0)
   const [error, setError] = useState("")
+  const [showResume, setShowResume] = useState(false)
+  const [pendingRunId, setPendingRunId] = useState<string | null>(null)
 
-  const onDrop = useCallback((accepted: File[]) => {
-    if (accepted[0]) {
-      setFile(accepted[0])
-      setError("")
+  const cancelledRef = useRef(false)
+  const abortRef = useRef<AbortController | null>(null)
+
+  /* ── detect pending upload on file selection ─────────── */
+  useEffect(() => {
+    if (!file) {
+      setShowResume(false)
+      setPendingRunId(null)
+      return
     }
+    const p = loadPending()
+    if (
+      p &&
+      p.fileName === file.name &&
+      p.fileSize === file.size &&
+      p.lastModified === file.lastModified
+    ) {
+      setPendingRunId(p.runId)
+      setShowResume(true)
+    } else {
+      setPendingRunId(null)
+      setShowResume(false)
+    }
+  }, [file])
+
+  /* ── file drop ───────────────────────────────────────── */
+  const onDrop = useCallback((accepted: File[]) => {
+    const f = accepted[0]
+    if (!f) return
+    if (!f.name.toLowerCase().endsWith(".zip")) {
+      setError("Only .zip files are supported.")
+      return
+    }
+    if (f.size === 0) {
+      setError("File is empty.")
+      return
+    }
+    if (f.size > MAX_FILE_BYTES) {
+      setError(
+        `File is too large (${formatBytes(f.size)}). Maximum upload size is ${formatBytes(MAX_FILE_BYTES)}.`,
+      )
+      return
+    }
+    setFile(f)
+    setError("")
+    setStage("idle")
   }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -37,51 +279,197 @@ export default function NewRunPage() {
     multiple: false,
   })
 
-  const submit = async () => {
-    if (!file) return
-    try {
-      setError("")
+  /* ── cancel handler ──────────────────────────────────── */
+  const handleCancel = useCallback(() => {
+    cancelledRef.current = true
+    abortRef.current?.abort()
+    setStage("cancelled")
+    setError("Upload cancelled.")
+  }, [])
 
-      // 1 — create run & get signed upload URL
-      setStage("creating")
-      const createRes = await fetch("/api/runs/create", { method: "POST" })
-      if (!createRes.ok) throw new Error((await createRes.json()).error ?? "Create failed")
-      const { runId, uploadUrl } = await createRes.json()
+  /* ── core upload logic ───────────────────────────────── */
+  const doUpload = useCallback(
+    async (resumeRunId: string | null) => {
+      if (!file) return
+      cancelledRef.current = false
+      abortRef.current = new AbortController()
+      const signal = abortRef.current.signal
 
-      // 2 — PUT zip to the signed URL
-      setStage("uploading")
-      setProgress(0)
+      try {
+        setError("")
 
-      const xhr = new XMLHttpRequest()
-      await new Promise<void>((resolve, reject) => {
-        xhr.open("PUT", uploadUrl)
-        xhr.setRequestHeader("Content-Type", "application/zip")
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100))
+        // 1 — Create or reuse run
+        let runId: string
+        if (resumeRunId) {
+          runId = resumeRunId
+        } else {
+          setStage("creating")
+          const createRes = await fetch("/api/runs/create", { method: "POST" })
+          if (!createRes.ok) {
+            const body = await createRes.json().catch(() => ({}))
+            throw new Error(body.error ?? "Failed to create run")
+          }
+          const data = await createRes.json()
+          runId = data.runId
         }
-        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload HTTP ${xhr.status}`)))
-        xhr.onerror = () => reject(new Error("Upload network error"))
-        xhr.send(file)
-      })
 
-      // 3 — trigger worker
-      setStage("triggering")
-      const triggerRes = await fetch("/api/runs/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ runId }),
-      })
-      if (!triggerRes.ok) throw new Error((await triggerRes.json()).error ?? "Trigger failed")
+        // 2 — Build part plans
+        const parts = buildPartPlans(file.size, runId)
+        setTotalParts(parts.length)
 
-      setStage("done")
-      setTimeout(() => router.push(`/dashboard/runs/${runId}`), 1200)
-    } catch (err: any) {
-      setStage("error")
-      setError(err.message ?? "Something went wrong")
+        // Save pending state for resume
+        savePending({
+          runId,
+          fileName: file.name,
+          fileSize: file.size,
+          lastModified: file.lastModified,
+          totalParts: parts.length,
+        })
+
+        // 3 — Check which parts already exist (for resume)
+        let completedKeys = new Map<string, number>() // key -> sizeBytes
+        if (resumeRunId) {
+          try {
+            const statusRes = await fetch(
+              `/api/runs/${runId}/upload-status`,
+            )
+            if (statusRes.ok) {
+              const data = await statusRes.json()
+              for (const p of data.parts ?? []) {
+                completedKeys.set(p.key, p.sizeBytes)
+              }
+            }
+          } catch {}
+        }
+
+        // 4 — Upload parts sequentially
+        setStage("uploading")
+        let uploadedBytes = 0
+
+        // Count already-uploaded bytes for progress
+        for (const part of parts) {
+          const existingSize = completedKeys.get(part.key)
+          if (existingSize !== undefined && existingSize === part.size) {
+            uploadedBytes += part.size
+          }
+        }
+        setProgress(
+          file.size > 0 ? Math.round((uploadedBytes / file.size) * 100) : 0,
+        )
+
+        for (const part of parts) {
+          if (cancelledRef.current) throw new Error("Upload cancelled")
+
+          // Skip completed parts
+          const existingSize = completedKeys.get(part.key)
+          if (existingSize !== undefined && existingSize === part.size) {
+            setCurrentPart(part.index)
+            continue
+          }
+
+          setCurrentPart(part.index)
+
+          const blob = file.slice(part.start, part.end)
+          await uploadPartWithRetry(runId, part.key, "application/octet-stream", blob, signal)
+
+          uploadedBytes += part.size
+          setProgress(
+            file.size > 0
+              ? Math.round((uploadedBytes / file.size) * 100)
+              : 100,
+          )
+        }
+
+        if (cancelledRef.current) throw new Error("Upload cancelled")
+
+        // 5 — Upload manifest
+        setStage("manifest")
+        const manifest = {
+          version: 1,
+          runId,
+          originalFileName: file.name,
+          originalSizeBytes: file.size,
+          chunkSizeBytes: MAX_PART_BYTES,
+          parts: parts.map((p) => ({
+            index: p.index,
+            key: p.key,
+            sizeBytes: p.size,
+          })),
+        }
+        const manifestKey = `runs/${runId}/upload/manifest.json`
+        const manifestBlob = new Blob([JSON.stringify(manifest, null, 2)])
+        await uploadPartWithRetry(runId, manifestKey, "application/json", manifestBlob, signal)
+
+        if (cancelledRef.current) throw new Error("Upload cancelled")
+
+        // 6 — Trigger worker
+        setStage("triggering")
+        const triggerRes = await fetch("/api/runs/trigger", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ runId }),
+        })
+        if (!triggerRes.ok) {
+          const body = await triggerRes.json().catch(() => ({}))
+          throw new Error(body.error ?? "Failed to start processing")
+        }
+
+        // 7 — Done
+        clearPending()
+        setStage("done")
+        setTimeout(() => router.push(`/dashboard/runs/${runId}`), 1200)
+      } catch (err: any) {
+        if (cancelledRef.current) {
+          setStage("cancelled")
+          setError("Upload cancelled. You can resume or start over.")
+        } else {
+          setStage("error")
+          setError(err.message ?? "Something went wrong")
+        }
+      }
+    },
+    [file, router],
+  )
+
+  const handleStartFresh = useCallback(() => {
+    setShowResume(false)
+    setPendingRunId(null)
+    doUpload(null)
+  }, [doUpload])
+
+  const handleResume = useCallback(() => {
+    setShowResume(false)
+    doUpload(pendingRunId)
+  }, [doUpload, pendingRunId])
+
+  const handleStartOver = useCallback(async () => {
+    if (pendingRunId) {
+      try {
+        await fetch(`/api/runs/${pendingRunId}/cleanup-parts`, {
+          method: "DELETE",
+        })
+      } catch {}
     }
-  }
+    clearPending()
+    setShowResume(false)
+    setPendingRunId(null)
+    doUpload(null)
+  }, [pendingRunId, doUpload])
 
-  const busy = stage !== "idle" && stage !== "error" && stage !== "done"
+  const handleRetry = useCallback(() => {
+    const p = loadPending()
+    if (p && file && p.fileName === file.name) {
+      doUpload(p.runId)
+    } else {
+      doUpload(null)
+    }
+  }, [doUpload, file])
+
+  const busy =
+    stage === "creating" ||
+    stage === "uploading" ||
+    stage === "manifest" ||
+    stage === "triggering"
 
   return (
     <div className="min-h-screen bg-muted/50">
@@ -89,20 +477,27 @@ export default function NewRunPage() {
 
       <div className="container max-w-2xl px-4 py-8">
         <Button variant="ghost" size="sm" asChild className="mb-6">
-          <Link href="/dashboard/runs"><ArrowLeft className="h-4 w-4 mr-1" />Runs</Link>
+          <Link href="/dashboard/runs">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Runs
+          </Link>
         </Button>
 
         <Card>
           <CardHeader>
             <CardTitle>New Run</CardTitle>
             <CardDescription>
-              Upload a <code className="font-mono text-xs bg-muted px-1 rounded">run_YYYYMMDD_HHMM.zip</code> containing
-              your raw scan data.
+              Upload a{" "}
+              <code className="font-mono text-xs bg-muted px-1 rounded">
+                run_YYYYMMDD_HHMM.zip
+              </code>{" "}
+              containing your raw scan data. Max {formatBytes(MAX_FILE_BYTES)}.
+              Files over 50 MB are automatically uploaded in parts.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* dropzone */}
+            {/* ── dropzone ─────────────────────────────── */}
             <div
               {...getRootProps()}
               className={`
@@ -117,52 +512,143 @@ export default function NewRunPage() {
                 <div className="flex flex-col items-center gap-2">
                   <FileArchive className="h-10 w-10 text-primary" />
                   <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">{formatBytes(file.size)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatBytes(file.size)}
+                  </p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2">
                   <Upload className="h-10 w-10 text-muted-foreground" />
-                  <p className="font-medium">{isDragActive ? "Drop it here" : "Drag & drop a .zip"}</p>
-                  <p className="text-sm text-muted-foreground">or click to browse</p>
+                  <p className="font-medium">
+                    {isDragActive ? "Drop it here" : "Drag & drop a .zip"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    or click to browse
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* progress / status */}
+            {/* ── resume prompt ─────────────────────────── */}
+            {showResume && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Found a previous upload for this file. Resume where you left
+                  off?
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleResume}>
+                    <RotateCcw className="h-3 w-3 mr-1" /> Resume
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleStartOver}
+                  >
+                    Start Over
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── progress ─────────────────────────────── */}
             {stage === "uploading" && (
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Uploading&hellip; {progress}%
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading part {currentPart}/{totalParts}&hellip;
+                  </span>
+                  <span>{progress}%</span>
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${progress}%` }}
+                  />
                 </div>
               </div>
             )}
             {stage === "creating" && (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Creating run&hellip;
+                <Loader2 className="h-4 w-4 animate-spin" /> Creating
+                run&hellip;
+              </p>
+            )}
+            {stage === "manifest" && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Writing
+                manifest&hellip;
               </p>
             )}
             {stage === "triggering" && (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Starting pipeline&hellip;
+                <Loader2 className="h-4 w-4 animate-spin" /> Starting
+                pipeline&hellip;
               </p>
             )}
             {stage === "done" && (
               <p className="flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle2 className="h-4 w-4" /> Run queued — redirecting&hellip;
+                <CheckCircle2 className="h-4 w-4" /> Run queued &mdash;
+                redirecting&hellip;
               </p>
             )}
-            {error && (
-              <p className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" /> {error}
-              </p>
+            {stage === "cancelled" && (
+              <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                <XCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p>Upload cancelled. You can resume or start a new upload.</p>
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" variant="outline" onClick={handleRetry}>
+                      <RotateCcw className="h-3 w-3 mr-1" /> Retry
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {error && stage === "error" && (
+              <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg break-all">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p>{error}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    onClick={handleRetry}
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" /> Retry Failed Parts
+                  </Button>
+                </div>
+              </div>
             )}
 
-            <Button className="w-full" size="lg" disabled={!file || busy} onClick={submit}>
-              {busy ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Working&hellip;</> : <><Upload className="h-4 w-4 mr-2" />Upload &amp; Process</>}
-            </Button>
+            {/* ── action buttons ───────────────────────── */}
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                size="lg"
+                disabled={!file || busy || showResume}
+                onClick={handleStartFresh}
+              >
+                {busy ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Working&hellip;
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload &amp; Process
+                  </>
+                )}
+              </Button>
+              {busy && (
+                <Button size="lg" variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -32,3 +32,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# worker secrets
+/fluxspace-worker/.env
+
+# python junk (if you ever run locally)
+__pycache__/
+*.pyc
+/fluxspace-worker/.venv/
+/fluxspace-worker/venv/

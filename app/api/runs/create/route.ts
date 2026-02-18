@@ -3,7 +3,6 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
 export async function POST() {
-  /* ── auth ──────────────────────────────────────────────── */
   const supabase = createClient()
   const {
     data: { user },
@@ -14,10 +13,9 @@ export async function POST() {
 
   const admin = createAdminClient()
   const runId = crypto.randomUUID()
-  const rawZipPath = `${runId}/input.zip`
+  const rawZipPath = `runs/${runId}/upload/manifest.json`
   const processedPrefix = `${runId}/`
 
-  /* ── insert row ────────────────────────────────────────── */
   const { error: insertErr } = await admin.from("runs").insert({
     id: runId,
     user_id: user.id,
@@ -32,21 +30,5 @@ export async function POST() {
     return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 
-  /* ── signed upload URL ─────────────────────────────────── */
-  const { data: signed, error: signErr } = await admin.storage
-    .from("runs-raw")
-    .createSignedUploadUrl(rawZipPath)
-
-  if (signErr || !signed) {
-    return NextResponse.json(
-      { error: signErr?.message ?? "Failed to create upload URL" },
-      { status: 500 },
-    )
-  }
-
-  return NextResponse.json({
-    runId,
-    uploadUrl: signed.signedUrl,
-    rawZipPath,
-  })
+  return NextResponse.json({ runId })
 }
