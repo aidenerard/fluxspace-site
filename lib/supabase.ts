@@ -47,6 +47,16 @@ export const createServiceClient = () => {
 }
 
 // Database types
+export type ScanStatus = 'uploaded' | 'processing' | 'done' | 'failed'
+export type ArtifactKind =
+  | 'mesh_ply'
+  | 'trajectory_csv'
+  | 'mag_world_csv'
+  | 'volume_npz'
+  | 'screenshot_png'
+  | 'outputs_zip'
+  | 'extrinsics_json'
+
 export type Database = {
   public: {
     Tables: {
@@ -158,6 +168,64 @@ export type Database = {
           logs?: string | null
           created_at?: string
           updated_at?: string
+        }
+      }
+      scans: {
+        Row: {
+          id: string
+          user_id: string
+          project_id: string
+          name: string
+          status: ScanStatus
+          error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          project_id: string
+          name: string
+          status?: ScanStatus
+          error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          project_id?: string
+          name?: string
+          status?: ScanStatus
+          error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      scan_artifacts: {
+        Row: {
+          id: string
+          scan_id: string
+          kind: ArtifactKind
+          storage_path: string
+          size_bytes: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          scan_id: string
+          kind: ArtifactKind
+          storage_path: string
+          size_bytes?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          scan_id?: string
+          kind?: ArtifactKind
+          storage_path?: string
+          size_bytes?: number | null
+          created_at?: string
         }
       }
       usage_counters: {
