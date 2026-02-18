@@ -57,6 +57,22 @@ export type ArtifactKind =
   | 'outputs_zip'
   | 'extrinsics_json'
 
+export type RunStatus = 'uploaded' | 'queued' | 'processing' | 'exporting' | 'done' | 'failed'
+
+export interface RunRow {
+  id: string
+  created_at: string
+  user_id: string
+  status: RunStatus
+  stage: string | null
+  progress: number
+  raw_zip_path: string
+  processed_prefix: string
+  error_message: string | null
+  log_path: string | null
+  summary_json: Record<string, unknown> | null
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -247,6 +263,23 @@ export type Database = {
           jobs_used?: number
           storage_used_bytes?: number
         }
+      }
+      runs: {
+        Row: RunRow
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id: string
+          status?: RunStatus
+          stage?: string | null
+          progress?: number
+          raw_zip_path: string
+          processed_prefix: string
+          error_message?: string | null
+          log_path?: string | null
+          summary_json?: Record<string, unknown> | null
+        }
+        Update: Partial<RunRow>
       }
     }
   }
