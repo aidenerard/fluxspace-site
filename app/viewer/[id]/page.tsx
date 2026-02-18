@@ -14,35 +14,14 @@ export default async function ViewerPage({
 
   if (!user) redirect("/signin")
 
+  // RLS check — user can only see their own runs
   const { data: run } = await supabase
     .from("runs")
-    .select("id, status, processed_prefix")
+    .select("id")
     .eq("id", params.id)
     .single()
 
-  if (!run || run.status !== "done") notFound()
+  if (!run) notFound()
 
-  const prefix = run.processed_prefix as string
-
-  // Signed URLs valid for 1 hour
-  const [manifestRes, sceneRes, heatmapRes] = await Promise.all([
-    supabase.storage.from("runs-processed").createSignedUrl(`${prefix}viewer/manifest.json`, 3600),
-    supabase.storage.from("runs-processed").createSignedUrl(`${prefix}viewer/scene.glb`, 3600),
-    supabase.storage.from("runs-processed").createSignedUrl(`${prefix}viewer/heatmap.glb`, 3600),
-  ])
-
-  const manifestUrl = manifestRes.data?.signedUrl ?? null
-  const sceneUrl = sceneRes.data?.signedUrl ?? null
-  const heatmapUrl = heatmapRes.data?.signedUrl ?? null
-
-  if (!sceneUrl) notFound()
-
-  return (
-    <ViewerClient
-      runId={run.id}
-      manifestUrl={manifestUrl}
-      sceneUrl={sceneUrl}
-      heatmapUrl={heatmapUrl}
-    />
-  )
+  return <ViewerClient runId={params.id} />
 }

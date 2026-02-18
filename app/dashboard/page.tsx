@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { FolderOpen, Cpu, HardDrive, Plus } from "lucide-react"
+import { FolderOpen, Cpu, HardDrive, Plus, Upload } from "lucide-react"
 import { formatBytes, formatDate } from "@/lib/utils"
 
 export default async function DashboardPage() {
@@ -39,6 +39,25 @@ export default async function DashboardPage() {
 
       <div className="container max-w-7xl px-4 py-8">
         <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
+
+        <Card className="mb-8 border-primary/30 bg-primary/5">
+          <CardContent className="flex items-center justify-between py-5">
+            <div>
+              <p className="font-semibold">Upload a run (.zip) to process and view in browser</p>
+              <p className="text-sm text-muted-foreground">Upload &rarr; Process &rarr; View 3D</p>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild>
+                <Link href="/dashboard/runs/new">
+                  <Upload className="h-4 w-4 mr-2" />Upload Run
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/dashboard/runs">View Runs</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
