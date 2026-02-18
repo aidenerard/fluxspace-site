@@ -1,8 +1,9 @@
-import { createClient as createBrowserClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 /**
- * Create a Supabase client for use in Client Components
- * This should only be used in "use client" components
+ * Create a Supabase client for use in Client Components.
+ * Uses @supabase/ssr so the auth session is stored in cookies,
+ * making it readable by server components and route handlers.
  */
 export const createBrowserSupabaseClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
