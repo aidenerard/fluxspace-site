@@ -164,7 +164,7 @@ export default function RunDetailClient({ runId }: { runId: string }) {
       )}
 
       {/* error */}
-      {run.status === "failed" && run.error_message && (
+      {run.status === "failed" && (run.error_message || run.error) && (
         <Card className="mb-6 border-destructive">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
@@ -174,7 +174,7 @@ export default function RunDetailClient({ runId }: { runId: string }) {
                   Processing failed
                 </p>
                 <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-3 rounded overflow-x-auto">
-                  {run.error_message}
+                  {run.error || run.error_message}
                 </pre>
               </div>
             </div>

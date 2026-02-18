@@ -128,56 +128,83 @@ async function getSignedUploadUrl(
 }
 
 /**
- * PUT a blob to a Supabase Storage signed URL using raw fetch().
+ * PUT a blob to a Supabase Storage signed URL using XMLHttpRequest.
+ *
+ * We use XHR instead of fetch() because XHR provides upload.onprogress
+ * events, giving smooth incremental progress during large part uploads.
  *
  * IMPORTANT — CORS rules for this request:
  *   • Do NOT include Authorization, apikey, x-upsert, or any custom header.
  *     The signed token embedded in the query string is the sole auth mechanism.
- *   • Set credentials:"omit" so the browser never attaches cookies to
- *     this cross-origin request (avoids credentialed-request CORS rules).
- *   • Do NOT set mode:"no-cors" — we need to read the response status.
+ *   • withCredentials = false so the browser never attaches cookies.
  *   • Send zero explicit headers so the preflight (OPTIONS) only needs the
  *     server to allow the PUT method, not any extra header names.
  */
-async function putToSignedUrl(
+function putToSignedUrl(
   signedUrl: string,
   blob: Blob,
   signal: AbortSignal,
+  onProgress?: (bytesUploaded: number) => void,
 ): Promise<void> {
   const safeUrl = stripToken(signedUrl)
-  let res: Response
-  try {
-    res = await fetch(signedUrl, {
-      method: "PUT",
-      body: blob,
-      credentials: "omit",
-      signal,
-    })
-  } catch (err: any) {
-    if (signal.aborted) throw err
-    console.error("[upload] PUT network error:", safeUrl)
-    throw new Error(
-      `Upload network error: ${err.message}. ` +
-        `Verify the signed URL points to /storage/v1/object/… ` +
-        `and that your Supabase project CORS allows your origin. ` +
-        `PUT target: ${safeUrl}`,
-    )
-  }
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", signedUrl)
+    xhr.withCredentials = false
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    console.error(`[upload] PUT ${res.status} ${safeUrl}:`, text.slice(0, 300))
-    if (res.status === 413 || text.includes("Maximum size exceeded")) {
-      throw new Error(
-        "Supabase Free plan limits uploads to 50 MB per file. " +
-          "This part exceeded the limit.",
+    const onAbort = () => {
+      xhr.abort()
+      reject(new DOMException("Upload aborted", "AbortError"))
+    }
+    signal.addEventListener("abort", onAbort, { once: true })
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(e.loaded)
+      }
+    }
+
+    xhr.onload = () => {
+      signal.removeEventListener("abort", onAbort)
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(blob.size)
+        resolve()
+      } else {
+        const text = xhr.responseText ?? ""
+        console.error(`[upload] PUT ${xhr.status} ${safeUrl}:`, text.slice(0, 300))
+        if (xhr.status === 413 || text.includes("Maximum size exceeded")) {
+          reject(
+            new Error(
+              "Supabase Free plan limits uploads to 50 MB per file. " +
+                "This part exceeded the limit.",
+            ),
+          )
+        } else {
+          reject(
+            new Error(
+              `Upload failed (HTTP ${xhr.status}): ${text || xhr.statusText}. ` +
+                `PUT target: ${safeUrl}`,
+            ),
+          )
+        }
+      }
+    }
+
+    xhr.onerror = () => {
+      signal.removeEventListener("abort", onAbort)
+      console.error("[upload] PUT network error:", safeUrl)
+      reject(
+        new Error(
+          `Upload network error. ` +
+            `Verify the signed URL points to /storage/v1/object/… ` +
+            `and that your Supabase project CORS allows your origin. ` +
+            `PUT target: ${safeUrl}`,
+        ),
       )
     }
-    throw new Error(
-      `Upload failed (HTTP ${res.status}): ${text || res.statusText}. ` +
-        `PUT target: ${safeUrl}`,
-    )
-  }
+
+    xhr.send(blob)
+  })
 }
 
 /**
@@ -191,11 +218,12 @@ async function uploadPartWithRetry(
   contentType: string,
   blob: Blob,
   signal: AbortSignal,
+  onProgress?: (bytesUploaded: number) => void,
 ) {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       const signedUrl = await getSignedUploadUrl(runId, objectPath, contentType)
-      await putToSignedUrl(signedUrl, blob, signal)
+      await putToSignedUrl(signedUrl, blob, signal, onProgress)
       return
     } catch (err: any) {
       if (signal.aborted) throw err
@@ -206,6 +234,7 @@ async function uploadPartWithRetry(
       ) {
         throw err
       }
+      onProgress?.(0)
       await new Promise((r) => setTimeout(r, RETRY_DELAYS[attempt] ?? 5000))
     }
   }
@@ -344,17 +373,17 @@ export default function NewRunPage() {
 
         // 4 — Upload parts sequentially
         setStage("uploading")
-        let uploadedBytes = 0
+        let completedBytes = 0
 
         // Count already-uploaded bytes for progress
         for (const part of parts) {
           const existingSize = completedKeys.get(part.key)
           if (existingSize !== undefined && existingSize === part.size) {
-            uploadedBytes += part.size
+            completedBytes += part.size
           }
         }
         setProgress(
-          file.size > 0 ? Math.round((uploadedBytes / file.size) * 100) : 0,
+          file.size > 0 ? Math.round((completedBytes / file.size) * 100) : 0,
         )
 
         for (const part of parts) {
@@ -369,13 +398,20 @@ export default function NewRunPage() {
 
           setCurrentPart(part.index)
 
+          const baseBytes = completedBytes
           const blob = file.slice(part.start, part.end)
-          await uploadPartWithRetry(runId, part.key, "application/octet-stream", blob, signal)
+          await uploadPartWithRetry(
+            runId, part.key, "application/octet-stream", blob, signal,
+            (partUploaded) => {
+              const total = baseBytes + partUploaded
+              setProgress(file.size > 0 ? Math.round((total / file.size) * 100) : 0)
+            },
+          )
 
-          uploadedBytes += part.size
+          completedBytes += part.size
           setProgress(
             file.size > 0
-              ? Math.round((uploadedBytes / file.size) * 100)
+              ? Math.round((completedBytes / file.size) * 100)
               : 100,
           )
         }
@@ -563,7 +599,7 @@ export default function NewRunPage() {
                 </div>
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-primary rounded-full transition-all"
+                    className="h-full bg-primary rounded-full transition-[width] duration-300 ease-out"
                     style={{ width: `${progress}%` }}
                   />
                 </div>

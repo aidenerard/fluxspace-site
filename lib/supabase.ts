@@ -69,6 +69,7 @@ export interface RunRow {
   raw_zip_path: string
   processed_prefix: string
   error_message: string | null
+  error: string | null
   log_path: string | null
   summary_json: Record<string, unknown> | null
 }

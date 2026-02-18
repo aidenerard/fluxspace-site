@@ -2,6 +2,24 @@ import { createClient } from "@/lib/supabase"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
+/**
+ * Normalize WORKER_URL so that `http://localhost:…` becomes
+ * `http://127.0.0.1:…`. On many machines (especially macOS)
+ * localhost resolves to IPv6 ::1 while Docker only publishes
+ * on 127.0.0.1, causing "fetch failed" from the Next.js server.
+ */
+function resolveWorkerUrl(raw: string): string {
+  try {
+    const u = new URL(raw)
+    if (u.hostname === "localhost") {
+      u.hostname = "127.0.0.1"
+    }
+    return u.toString().replace(/\/$/, "")
+  } catch {
+    return raw.replace(/\/$/, "")
+  }
+}
+
 export async function POST(request: Request) {
   /* ── auth ──────────────────────────────────────────────── */
   const supabase = createClient()
@@ -47,26 +65,44 @@ export async function POST(request: Request) {
     })
     .eq("id", runId)
 
-  /* ── call worker ───────────────────────────────────────── */
-  const WORKER_URL = process.env.WORKER_URL
+  /* ── resolve worker URL ────────────────────────────────── */
+  const rawWorkerUrl = process.env.WORKER_URL
   const WORKER_SECRET = process.env.WORKER_SECRET
-  if (!WORKER_URL || !WORKER_SECRET) {
+  if (!rawWorkerUrl || !WORKER_SECRET) {
+    const msg = "WORKER_URL or WORKER_SECRET not configured"
+    console.error(`[trigger] ${msg}`)
     await admin
       .from("runs")
-      .update({
-        status: "failed",
-        stage: "trigger_failed",
-        error_message: "WORKER_URL or WORKER_SECRET not configured",
-      })
+      .update({ status: "failed", stage: "trigger_failed", error_message: msg })
       .eq("id", runId)
-    return NextResponse.json(
-      { error: "Worker not configured" },
-      { status: 500 },
-    )
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 
+  const workerUrl = resolveWorkerUrl(rawWorkerUrl)
+  console.log(`[trigger] runId=${runId} workerUrl=${workerUrl}`)
+
+  /* ── health check ──────────────────────────────────────── */
   try {
-    const res = await fetch(`${WORKER_URL}/jobs/run`, {
+    const healthRes = await fetch(`${workerUrl}/health`, {
+      method: "GET",
+      signal: AbortSignal.timeout(5000),
+    })
+    console.log(`[trigger] worker /health → ${healthRes.status}`)
+  } catch (healthErr: any) {
+    const msg =
+      `Worker health check failed (${workerUrl}/health): ${healthErr.message}. ` +
+      `Is the worker running? If using Docker, ensure it publishes on 127.0.0.1, not just ::1.`
+    console.error(`[trigger] ${msg}`)
+    await admin
+      .from("runs")
+      .update({ status: "failed", stage: "trigger_failed", error_message: msg })
+      .eq("id", runId)
+    return NextResponse.json({ error: msg }, { status: 502 })
+  }
+
+  /* ── call worker ───────────────────────────────────────── */
+  try {
+    const res = await fetch(`${workerUrl}/jobs/run`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -77,30 +113,24 @@ export async function POST(request: Request) {
 
     if (!res.ok) {
       const body = await res.text()
+      const msg = `Worker responded ${res.status}: ${body}`
+      console.error(`[trigger] ${msg}`)
       await admin
         .from("runs")
-        .update({
-          status: "failed",
-          stage: "trigger_failed",
-          error_message: `Worker responded ${res.status}: ${body}`,
-        })
+        .update({ status: "failed", stage: "trigger_failed", error_message: msg })
         .eq("id", runId)
-      return NextResponse.json({ error: body }, { status: 502 })
+      return NextResponse.json({ error: msg }, { status: 502 })
     }
 
+    console.log(`[trigger] runId=${runId} queued successfully`)
     return NextResponse.json({ status: "queued", runId })
   } catch (err: any) {
+    const msg = `Worker unreachable at ${workerUrl}/jobs/run: ${err.message}`
+    console.error(`[trigger] ${msg}`)
     await admin
       .from("runs")
-      .update({
-        status: "failed",
-        stage: "trigger_failed",
-        error_message: `Worker unreachable: ${err.message}`,
-      })
+      .update({ status: "failed", stage: "trigger_failed", error_message: msg })
       .eq("id", runId)
-    return NextResponse.json(
-      { error: `Worker unreachable: ${err.message}` },
-      { status: 502 },
-    )
+    return NextResponse.json({ error: msg }, { status: 502 })
   }
 }
