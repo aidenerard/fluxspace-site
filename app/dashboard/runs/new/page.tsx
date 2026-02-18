@@ -87,7 +87,11 @@ export default function NewRunPage() {
       <header className="border-b bg-background">
         <div className="container flex h-16 items-center justify-between px-4">
           <Link href="/" className="text-xl font-bold">FluxSpace</Link>
-          <Link href="/account" className="text-sm font-medium">Account</Link>
+          <nav className="flex items-center gap-4">
+            <Link href="/dashboard/runs/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Upload</Link>
+            <Link href="/dashboard/runs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Runs</Link>
+            <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Account</Link>
+          </nav>
         </div>
       </header>
 

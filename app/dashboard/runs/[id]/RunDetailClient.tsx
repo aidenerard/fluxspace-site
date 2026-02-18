@@ -259,9 +259,11 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-xl font-bold">
             FluxSpace
           </Link>
-          <Link href="/account" className="text-sm font-medium">
-            Account
-          </Link>
+          <nav className="flex items-center gap-4">
+            <Link href="/dashboard/runs/new" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Upload</Link>
+            <Link href="/dashboard/runs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Runs</Link>
+            <Link href="/account" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Account</Link>
+          </nav>
         </div>
       </header>
       <div className="container max-w-4xl px-4 py-8">{children}</div>

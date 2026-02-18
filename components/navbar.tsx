@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Moon, Sun, Menu, MessageSquare, FileText, Mail, Info } from "lucide-react"
+import { Moon, Sun, Menu, MessageSquare, FileText, Mail, Info, Upload, List } from "lucide-react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -26,6 +26,8 @@ export function NavBar() {
     { href: "/pipeline", label: "Pipeline" },
     { href: "/pricing", label: "Pricing" },
     { href: "/docs", label: "Docs" },
+    { href: "/dashboard/runs/new", label: "Upload" },
+    { href: "/dashboard/runs", label: "Runs" },
   ]
 
   const moreLinks = [

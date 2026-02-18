@@ -21,15 +21,15 @@ export default function Home() {
               Upload your drone$apos;s magnetometer logs and get a georeferenced anomaly map ready to review in minutes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/signup">
-                <Button size="lg">
-                  Start free
+              <Button size="lg" asChild>
+                <Link href="/dashboard/runs/new">
+                  Upload a Run
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/docs">
-                <Button size="lg" variant="outline">View docs</Button>
-              </Link>
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/dashboard/runs">View Runs</Link>
+              </Button>
             </div>
 
             {/* CSV Schema Example */}
