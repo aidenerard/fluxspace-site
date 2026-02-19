@@ -51,7 +51,8 @@ export async function POST(
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-  // Server-only: POST to the Supabase Storage sign endpoint
+  console.log(`[sign-upload] runId=${runId} objectPath=${objectPath}`)
+
   const signEndpointUrl = `${supabaseUrl}/storage/v1/object/upload/sign/runs-raw/${objectPath}`
 
   const signRes = await fetch(signEndpointUrl, {

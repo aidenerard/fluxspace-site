@@ -1,0 +1,9 @@
+services:
+  worker:
+    image: fluxspace-worker
+    container_name: fluxspace-worker
+    env_file:
+      - ./fluxspace-worker/.env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

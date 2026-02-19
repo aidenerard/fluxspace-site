@@ -255,6 +255,8 @@ export default function NewRunPage() {
 
   const cancelledRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
+  const uploadLockRef = useRef(false)
+  const activeRunIdRef = useRef<string | null>(null)
 
   /* ── detect pending upload on file selection ─────────── */
   useEffect(() => {
@@ -320,6 +322,15 @@ export default function NewRunPage() {
   const doUpload = useCallback(
     async (resumeRunId: string | null) => {
       if (!file) return
+
+      // Synchronous lock — prevents double-click / StrictMode from
+      // spawning a second concurrent flow with a different runId.
+      if (uploadLockRef.current) {
+        console.warn("[upload] already in progress, ignoring duplicate call")
+        return
+      }
+      uploadLockRef.current = true
+
       cancelledRef.current = false
       abortRef.current = new AbortController()
       const signal = abortRef.current.signal
@@ -327,10 +338,11 @@ export default function NewRunPage() {
       try {
         setError("")
 
-        // 1 — Create or reuse run
+        // 1 — Create or reuse run (single source of truth for runId)
         let runId: string
         if (resumeRunId) {
           runId = resumeRunId
+          console.log(`[upload] resuming runId=${runId}`)
         } else {
           setStage("creating")
           const createRes = await fetch("/api/runs/create", { method: "POST" })
@@ -340,7 +352,11 @@ export default function NewRunPage() {
           }
           const data = await createRes.json()
           runId = data.runId
+          console.log(`[upload] created runId=${runId}`)
         }
+
+        // Pin runId in a ref so nothing can drift
+        activeRunIdRef.current = runId
 
         // 2 — Build part plans
         const parts = buildPartPlans(file.size, runId)
@@ -356,7 +372,7 @@ export default function NewRunPage() {
         })
 
         // 3 — Check which parts already exist (for resume)
-        let completedKeys = new Map<string, number>() // key -> sizeBytes
+        let completedKeys = new Map<string, number>()
         if (resumeRunId) {
           try {
             const statusRes = await fetch(
@@ -375,7 +391,6 @@ export default function NewRunPage() {
         setStage("uploading")
         let completedBytes = 0
 
-        // Count already-uploaded bytes for progress
         for (const part of parts) {
           const existingSize = completedKeys.get(part.key)
           if (existingSize !== undefined && existingSize === part.size) {
@@ -389,12 +404,13 @@ export default function NewRunPage() {
         for (const part of parts) {
           if (cancelledRef.current) throw new Error("Upload cancelled")
 
-          // Skip completed parts
           const existingSize = completedKeys.get(part.key)
           if (existingSize !== undefined && existingSize === part.size) {
             setCurrentPart(part.index)
             continue
           }
+
+          console.log(`[upload] part ${part.index}/${parts.length} runId=${runId} key=${part.key}`)
 
           setCurrentPart(part.index)
 
@@ -420,6 +436,7 @@ export default function NewRunPage() {
 
         // 5 — Upload manifest
         setStage("manifest")
+        console.log(`[upload] manifest runId=${runId} parts=${parts.length}`)
         const manifest = {
           version: 1,
           runId,
@@ -438,8 +455,17 @@ export default function NewRunPage() {
 
         if (cancelledRef.current) throw new Error("Upload cancelled")
 
-        // 6 — Trigger worker
+        // 6 — Defensive check: the runId we're about to trigger MUST
+        //     match the one we uploaded parts under.
+        if (activeRunIdRef.current !== runId) {
+          throw new Error(
+            `runId mismatch: upload used ${runId} but active ref is ${activeRunIdRef.current}. Aborting trigger.`,
+          )
+        }
+
+        // 7 — Trigger worker
         setStage("triggering")
+        console.log(`[upload] trigger runId=${runId}`)
         const triggerRes = await fetch("/api/runs/trigger", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -450,7 +476,7 @@ export default function NewRunPage() {
           throw new Error(body.error ?? "Failed to start processing")
         }
 
-        // 7 — Done
+        // 8 — Done
         clearPending()
         setStage("done")
         setTimeout(() => router.push(`/dashboard/runs/${runId}`), 1200)
@@ -462,6 +488,8 @@ export default function NewRunPage() {
           setStage("error")
           setError(err.message ?? "Something went wrong")
         }
+      } finally {
+        uploadLockRef.current = false
       }
     },
     [file, router],

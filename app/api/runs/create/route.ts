@@ -30,5 +30,6 @@ export async function POST() {
     return NextResponse.json({ error: insertErr.message }, { status: 500 })
   }
 
+  console.log(`[create] runId=${runId} userId=${user.id}`)
   return NextResponse.json({ runId })
 }
