@@ -57,7 +57,8 @@ export default function ViewerClient({ runId }: { runId: string }) {
         const v = json.viewer as ViewerUrls
         if (!v.surfaceUrl) {
           setError(
-            "The worker hasn't uploaded viewer assets yet. " +
+            "Viewer unavailable — surface.glb not found in storage for this run. " +
+              "The worker may not have uploaded viewer assets. " +
               "Check the run status page and try again later.",
           )
           setLoading(false)

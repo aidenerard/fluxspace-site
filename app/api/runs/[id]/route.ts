@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { NextResponse } from "next/server"
 
-const SIGNED_TTL = 600 // 10 minutes
+const SIGNED_TTL = 3600 // 60 minutes
 
 export async function GET(
   _request: Request,
@@ -47,71 +47,39 @@ export async function GET(
   }
 
   if (run.status === "done") {
-    const prefix = run.processed_prefix as string // "{runId}/"
+    // Viewer assets live in runs-viewer at deterministic paths derived from runId.
+    // Convention: runs/<runId>/surface.glb, heatmap.png, viewer_manifest.json
+    const VIEWER_BUCKET = "runs-viewer"
+    const runId = params.id
 
-    // Check which viewer files actually exist before signing
-    const viewerDir = `${prefix}viewer`
-    const { data: viewerFiles } = await admin.storage
-      .from("runs-processed")
-      .list(viewerDir)
+    const surfacePath = `runs/${runId}/surface.glb`
+    const heatmapPath = `runs/${runId}/heatmap.png`
+    const manifestPath = `runs/${runId}/viewer_manifest.json`
 
-    if (viewerFiles) {
-      const names = new Set(viewerFiles.map((f: any) => f.name))
+    // createSignedUrl returns { data: { signedUrl } | null, error }
+    // If the object doesn't exist the signed URL is still generated (it will 404
+    // when fetched). To avoid that we could list first, but for speed we just sign
+    // and let the viewer handle a 404 gracefully.
+    const [surfaceRes, heatmapRes, manifestRes] = await Promise.all([
+      admin.storage.from(VIEWER_BUCKET).createSignedUrl(surfacePath, SIGNED_TTL),
+      admin.storage.from(VIEWER_BUCKET).createSignedUrl(heatmapPath, SIGNED_TTL),
+      admin.storage.from(VIEWER_BUCKET).createSignedUrl(manifestPath, SIGNED_TTL),
+    ])
 
-      if (names.has("manifest.json")) {
-        const { data } = await admin.storage
-          .from("runs-processed")
-          .createSignedUrl(`${viewerDir}/manifest.json`, SIGNED_TTL)
-        viewer.manifestUrl = data?.signedUrl ?? null
-      }
-      if (names.has("scene.glb")) {
-        const { data } = await admin.storage
-          .from("runs-processed")
-          .createSignedUrl(`${viewerDir}/scene.glb`, SIGNED_TTL)
-        viewer.surfaceUrl = data?.signedUrl ?? null
-      }
-      if (names.has("heatmap.glb")) {
-        const { data } = await admin.storage
-          .from("runs-processed")
-          .createSignedUrl(`${viewerDir}/heatmap.glb`, SIGNED_TTL)
-        viewer.heatmapUrl = data?.signedUrl ?? null
-      }
-    }
+    viewer.surfaceUrl = surfaceRes.data?.signedUrl ?? null
+    viewer.heatmapUrl = heatmapRes.data?.signedUrl ?? null
+    viewer.manifestUrl = manifestRes.data?.signedUrl ?? null
 
-    // Exports directory
-    const exportsDir = `${prefix}exports`
-    const { data: exportFiles } = await admin.storage
-      .from("runs-processed")
-      .list(exportsDir, { limit: 50 })
-
-    if (exportFiles) {
-      const signedExports = await Promise.all(
-        exportFiles.map(async (f: any) => {
-          const { data } = await admin.storage
-            .from("runs-processed")
-            .createSignedUrl(`${exportsDir}/${f.name}`, SIGNED_TTL)
-          return data?.signedUrl
-            ? { name: f.name as string, url: data.signedUrl }
-            : null
-        }),
-      )
-      downloads.exports = signedExports.filter(
-        (e): e is { name: string; url: string } => e !== null,
-      )
-    }
-
-    // Log file
-    const logDir = `${run.id}`
+    // --- Log file (best-effort) ---
     const { data: logFiles } = await admin.storage
       .from("runs-logs")
-      .list(logDir)
-
+      .list(runId)
     if (logFiles) {
       const logFile = logFiles.find((f: any) => f.name === "pipeline.log")
       if (logFile) {
         const { data } = await admin.storage
           .from("runs-logs")
-          .createSignedUrl(`${logDir}/pipeline.log`, SIGNED_TTL)
+          .createSignedUrl(`${runId}/pipeline.log`, SIGNED_TTL)
         downloads.logUrl = data?.signedUrl ?? null
       }
     }

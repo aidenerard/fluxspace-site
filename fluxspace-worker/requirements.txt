@@ -2,3 +2,7 @@ fastapi==0.110.0
 uvicorn[standard]==0.27.1
 python-multipart==0.0.9
 requests==2.31.0
+numpy
+open3d
+opencv-python-headless
+trimesh
