@@ -57,6 +57,7 @@ interface ApiResponse {
 export default function RunDetailClient({ runId }: { runId: string }) {
   const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [triggering, setTriggering] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -67,15 +68,30 @@ export default function RunDetailClient({ runId }: { runId: string }) {
     }
   }, [runId])
 
+  const triggerProcessing = useCallback(async () => {
+    setTriggering(true)
+    try {
+      const res = await fetch(`/api/runs/${runId}/trigger`, { method: "POST" })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error("[trigger]", body.error ?? res.statusText)
+      }
+      await load()
+    } finally {
+      setTriggering(false)
+    }
+  }, [runId, load])
+
   useEffect(() => {
     load()
   }, [load])
 
-  // Poll every 2 s while in-progress
+  // Poll every 2 s while not terminal
   useEffect(() => {
     if (!data) return
     const s = data.run.status
     if (s === "done" || s === "failed") return
+    // Poll for uploaded (stage=ready_for_processing), queued, processing, exporting
     const t = setInterval(load, 2000)
     return () => clearInterval(t)
   }, [data, load])
@@ -236,13 +252,37 @@ export default function RunDetailClient({ runId }: { runId: string }) {
         </>
       )}
 
-      {/* uploaded / waiting */}
-      {run.status === "uploaded" && (
+      {/* uploaded — not yet triggered */}
+      {run.status === "uploaded" && run.stage !== "ready_for_processing" && (
         <Card>
-          <CardContent className="pt-6 text-center py-12 text-muted-foreground">
-            <Clock className="h-10 w-10 mx-auto mb-3" />
+          <CardContent className="pt-6 text-center py-12 space-y-4">
+            <Clock className="h-10 w-10 mx-auto text-muted-foreground" />
+            <p className="font-medium text-muted-foreground">
+              Uploaded — not yet queued for processing
+            </p>
+            <Button onClick={triggerProcessing} disabled={triggering}>
+              {triggering ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {triggering ? "Triggering\u2026" : "Trigger processing"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* queued — worker will pick it up */}
+      {(run.status === "queued" ||
+        (run.status === "uploaded" && run.stage === "ready_for_processing")) && (
+        <Card>
+          <CardContent className="pt-6 text-center py-12 space-y-3">
+            <Loader2 className="h-10 w-10 mx-auto animate-spin text-blue-500" />
             <p className="font-medium">
-              Uploaded — waiting to be triggered
+              Queued — worker will start shortly
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Auto-refreshes every 2 s
             </p>
           </CardContent>
         </Card>
