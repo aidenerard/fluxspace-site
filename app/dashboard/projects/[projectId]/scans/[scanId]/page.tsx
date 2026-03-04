@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
+import NextImage from "next/image"
 import { createBrowserSupabaseClient } from "@/lib/supabase-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -109,7 +110,7 @@ export default function ScanDetailPage() {
     }, 5000)
 
     return () => clearInterval(interval)
-  }, [scan?.status, fetchData])
+  }, [scan, fetchData])
 
   const handleDownload = async (artifact: Artifact) => {
     const { data } = await supabase.storage
@@ -227,9 +228,12 @@ export default function ScanDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="rounded-lg overflow-hidden border bg-black">
-                <img
+                <NextImage
                   src={screenshotUrl}
                   alt="3D heatmap visualization"
+                  width={0}
+                  height={0}
+                  sizes="100vw"
                   className="w-full h-auto"
                 />
               </div>
